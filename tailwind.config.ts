@@ -61,7 +61,29 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// LetterLink custom colors
+				'letter-paper': 'hsl(var(--letter-paper))',
+				'letter-shadow': 'hsl(var(--letter-shadow))',
+				'ink-blue': 'hsl(var(--ink-blue))',
+				'vintage-red': 'hsl(var(--vintage-red))',
+				'postal-stamp': 'hsl(var(--postal-stamp))'
+			},
+			backgroundImage: {
+				'gradient-paper': 'var(--gradient-paper)',
+				'gradient-vintage': 'var(--gradient-vintage)'
+			},
+			boxShadow: {
+				'letter': 'var(--shadow-letter)',
+				'vintage': 'var(--shadow-vintage)'
+			},
+			fontFamily: {
+				'heading': 'var(--font-heading)',
+				'body': 'var(--font-body)'
+			},
+			transitionTimingFunction: {
+				'smooth': 'var(--transition-smooth)',
+				'letter': 'var(--transition-letter)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

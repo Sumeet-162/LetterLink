@@ -18,6 +18,10 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // LetterLink custom variants
+        vintage: "bg-gradient-vintage border border-border shadow-vintage text-foreground hover:shadow-letter hover:bg-gradient-paper transition-letter",
+        letter: "bg-letter-paper border border-vintage-red shadow-letter text-ink-blue hover:shadow-xl hover:scale-[1.02] transition-letter font-heading",
+        stamp: "bg-postal-stamp text-primary-foreground rounded-sm hover:bg-postal-stamp/90 shadow-vintage",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -2,39 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* LetterLink Design System - Inspired by vintage letters and meaningful communication */
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm, paper-like background tones */
+    --background: 45 20% 98%;
+    --foreground: 25 25% 15%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card backgrounds with subtle paper texture feel */
+    --card: 42 18% 96%;
+    --card-foreground: 25 25% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 42 18% 96%;
+    --popover-foreground: 25 25% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep ink blue for primary elements */
+    --primary: 215 85% 25%;
+    --primary-foreground: 45 20% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Soft sepia tones for secondary elements */
+    --secondary: 40 15% 88%;
+    --secondary-foreground: 25 25% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted paper tones */
+    --muted: 40 12% 92%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Warm accent color - vintage stamp red */
+    --accent: 15 85% 55%;
+    --accent-foreground: 45 20% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive actions */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Subtle borders and inputs */
+    --border: 40 10% 85%;
+    --input: 40 10% 90%;
+    --ring: 215 85% 25%;
+
+    /* Letter-specific colors */
+    --letter-paper: 45 35% 96%;
+    --letter-shadow: 25 20% 25%;
+    --ink-blue: 215 85% 25%;
+    --vintage-red: 15 85% 55%;
+    --postal-stamp: 220 70% 45%;
+    
+    /* Gradients for special effects */
+    --gradient-paper: linear-gradient(135deg, hsl(45, 25%, 97%), hsl(42, 18%, 94%));
+    --gradient-vintage: linear-gradient(145deg, hsl(40, 30%, 95%), hsl(35, 25%, 92%));
+    
+    /* Shadows for depth */
+    --shadow-letter: 0 8px 25px -5px hsl(var(--letter-shadow) / 0.15);
+    --shadow-vintage: 0 4px 15px -3px hsl(var(--letter-shadow) / 0.12);
+    
+    /* Typography scale */
+    --font-heading: 'Crimson Text', serif;
+    --font-body: 'Inter', sans-serif;
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-letter: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
     --radius: 0.5rem;
 
