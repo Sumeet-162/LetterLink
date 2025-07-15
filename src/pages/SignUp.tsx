@@ -15,10 +15,41 @@ const SignUp = () => {
   });
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement account creation
-    console.log("Sign up with:", formData);
+    
+    if (formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match!");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store the token
+        localStorage.setItem('token', data.token);
+        // Navigate to profile completion for new users
+        navigate('/profile');
+      } else {
+        alert(data.message || "Registration failed");
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert("Failed to connect to server");
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,7 +61,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-paper flex items-center justify-center p-4 relative">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
         style={{

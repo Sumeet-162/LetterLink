@@ -9,16 +9,66 @@ import { useNavigate } from "react-router-dom";
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication
-    console.log("Sign in with:", { email, password });
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store the token
+        localStorage.setItem('token', data.token);
+        
+        // Check if profile is completed
+        try {
+          const profileResponse = await fetch('http://localhost:5000/api/profile/status', {
+            headers: {
+              'Authorization': `Bearer ${data.token}`
+            }
+          });
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.profileCompleted) {
+              navigate('/dashboard');
+            } else {
+              navigate('/profile');
+            }
+          } else {
+            // If profile check fails, default to profile page
+            navigate('/profile');
+          }
+        } catch (profileError) {
+          // If profile check fails, default to profile page
+          navigate('/profile');
+        }
+      } else {
+        setError(data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError("Failed to connect to server");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-paper flex items-center justify-center p-4 relative">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed" 
         style={{
@@ -54,6 +104,11 @@ const SignIn = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
             <div className="space-y-4">
               <div className="relative">
                 <Input
@@ -63,6 +118,7 @@ const SignIn = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 py-6 bg-white/50 border-2 border-primary/20 focus:border-primary transition-colors"
                   required
+                  disabled={isLoading}
                 />
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
               </div>
@@ -74,6 +130,7 @@ const SignIn = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 py-6 bg-white/50 border-2 border-primary/20 focus:border-primary transition-colors"
                   required
+                  disabled={isLoading}
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
               </div>
@@ -83,8 +140,9 @@ const SignIn = () => {
               <Button 
                 type="submit" 
                 className="w-full py-6 bg-primary hover:bg-primary/90 text-white text-lg font-alata"
+                disabled={isLoading}
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
 

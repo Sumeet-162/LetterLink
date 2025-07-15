@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Clock, MapPin, Eye, Reply, Archive, Calendar } from "lucide-react";
+import { Mail, Clock, MapPin, Eye, Reply, Archive, Calendar, PenTool, Plus, Globe, Heart } from "lucide-react";
+import { AnimateSvg } from "@/components/ui/AnimateSvg";
+import Navigation from "@/components/Navigation";
+import "@/styles/fonts.css";
 
 interface Letter {
   id: string;
@@ -19,6 +23,7 @@ interface Letter {
 }
 
 const Inbox = () => {
+  const navigate = useNavigate();
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [letters] = useState<Letter[]>([
     {
@@ -56,69 +61,113 @@ const Inbox = () => {
     }
   ]);
 
+  // Font combinations matching Landing page
+  const headingClasses = "font-alata font-semibold tracking-tight";
+  const bodyClasses = "font-spectral text-muted-foreground leading-relaxed";
+  const accentClasses = "font-alata font-medium tracking-wide";
+
   const deliveredLetters = letters.filter(letter => letter.status === "delivered");
   const transitLetters = letters.filter(letter => letter.status === "in-transit");
   const unreadCount = deliveredLetters.filter(letter => !letter.isRead).length;
 
   const markAsRead = (letterId: string) => {
-    // This would update the letter status in Supabase
+    // This would update the letter status in backend
     console.log("Marking letter as read:", letterId);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-paper p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <Card className="shadow-vintage">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 p-4 rounded-full bg-primary/10 w-fit">
-              <Mail className="h-8 w-8 text-primary" />
+    <div className="min-h-screen pt-16">
+      <Navigation />
+      
+      {/* Header Section */}
+      <div className="relative overflow-hidden bg-white/90 backdrop-blur-sm border-b border-primary/10">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center space-y-6">
+            <div className="flex justify-center mb-6">
             </div>
-            <CardTitle className="text-3xl font-heading">Your Inbox</CardTitle>
-            <p className="text-muted-foreground">
+            <h1 className={`text-4xl lg:text-5xl text-foreground ${headingClasses}`}>
+              Your Letter Inbox
+            </h1>
+            <p className={`text-xl max-w-2xl mx-auto ${bodyClasses}`}>
               Letters from around the world, delivered at the speed of distance
             </p>
             {unreadCount > 0 && (
-              <Badge variant="secondary" className="bg-accent/10 text-accent">
-                {unreadCount} unread letter{unreadCount !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex justify-center">
+                <Badge className="bg-gradient-to-r from-primary to-primary/80 text-white px-4 py-2 text-sm font-alata">
+                  {unreadCount} new letter{unreadCount !== 1 ? 's' : ''} waiting
+                </Badge>
+              </div>
             )}
-          </CardHeader>
-        </Card>
+          </div>
+        </div>
+      </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Letters List */}
-          <div className="lg:col-span-1 space-y-6">
+      {/* Main Content */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid lg:grid-cols-5 gap-8">
+          {/* Sidebar with Letters List */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Quick Actions */}
+            <Card className="shadow-vintage border-none bg-white/90 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex gap-3">
+                  <Button 
+                    variant="letter" 
+                    size="lg"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-white font-alata"
+                    onClick={() => navigate('/write')}
+                  >
+                    <PenTool className="h-4 w-4 mr-2" />
+                    Write Letter
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="flex-1 border-primary/20 hover:bg-primary/10 font-alata"
+                  >
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* In Transit Letters */}
             {transitLetters.length > 0 && (
-              <Card className="shadow-letter">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 font-heading text-lg">
-                    <Clock className="h-5 w-5 text-accent" />
-                    In Transit ({transitLetters.length})
+              <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className={`flex items-center gap-2 text-xl ${accentClasses}`}>
+                    <div className="p-2 rounded-full bg-accent/10">
+                      <Clock className="h-5 w-5 text-accent" />
+                    </div>
+                    Letters in Transit
                   </CardTitle>
+                  <p className={`text-sm ${bodyClasses}`}>
+                    {transitLetters.length} letter{transitLetters.length !== 1 ? 's' : ''} on the way
+                  </p>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   {transitLetters.map((letter) => (
                     <div
                       key={letter.id}
-                      className="p-4 rounded-lg bg-accent/5 border border-accent/20 cursor-pointer hover:bg-accent/10 transition-colors"
+                      className="group p-4 rounded-lg bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 hover:shadow-vintage transition-all duration-300 hover:-translate-y-1"
                     >
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-accent" />
-                          <span className="font-medium text-sm">{letter.senderCountry}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-accent" />
+                            <span className={`text-sm ${accentClasses}`}>{letter.senderCountry}</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs bg-accent/10 border-accent/30">
+                            {letter.timeRemaining} left
+                          </Badge>
                         </div>
-                        <h3 className="font-heading font-semibold text-sm line-clamp-2">
+                        <h3 className={`font-semibold text-sm line-clamp-2 ${headingClasses}`}>
                           {letter.title}
                         </h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          <span>Arrives in {letter.timeRemaining}</span>
-                        </div>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {letter.senderInterests.slice(0, 2).map((interest) => (
-                            <Badge key={interest} variant="outline" className="text-xs">
+                            <Badge key={interest} variant="secondary" className="text-xs">
                               {interest}
                             </Badge>
                           ))}
@@ -131,23 +180,28 @@ const Inbox = () => {
             )}
 
             {/* Delivered Letters */}
-            <Card className="shadow-letter">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-heading text-lg">
-                  <Mail className="h-5 w-5 text-primary" />
-                  Delivered ({deliveredLetters.length})
+            <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className={`flex items-center gap-2 text-xl ${accentClasses}`}>
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  Delivered Letters
                 </CardTitle>
+                <p className={`text-sm ${bodyClasses}`}>
+                  {deliveredLetters.length} letter{deliveredLetters.length !== 1 ? 's' : ''} waiting to be read
+                </p>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 {deliveredLetters.map((letter) => (
                   <div
                     key={letter.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-vintage ${
+                    className={`group p-4 rounded-lg border cursor-pointer transition-all duration-300 hover:shadow-vintage hover:-translate-y-1 ${
                       selectedLetter?.id === letter.id
-                        ? 'bg-primary/10 border-primary/30'
+                        ? 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/30 shadow-lg'
                         : letter.isRead
-                        ? 'bg-secondary/30 border-border'
-                        : 'bg-letter-paper border-vintage-red/30'
+                        ? 'bg-gradient-to-r from-secondary/20 to-secondary/10 border-secondary/30 hover:bg-secondary/30'
+                        : 'bg-gradient-to-r from-white to-letter-paper border-primary/20 hover:border-primary/40 shadow-md'
                     }`}
                     onClick={() => {
                       setSelectedLetter(letter);
@@ -156,28 +210,29 @@ const Inbox = () => {
                       }
                     }}
                   >
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
-                          <span className="font-medium text-sm">{letter.senderCountry}</span>
+                          <Globe className="h-4 w-4 text-primary" />
+                          <span className={`text-sm ${accentClasses}`}>{letter.senderCountry}</span>
                         </div>
-                        {!letter.isRead && (
-                          <div className="w-2 h-2 rounded-full bg-accent" />
-                        )}
+                        <div className="flex items-center gap-2">
+                          {!letter.isRead && (
+                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {letter.receivedAt}
+                          </Badge>
+                        </div>
                       </div>
-                      <h3 className={`font-heading font-semibold text-sm line-clamp-2 ${
-                        letter.isRead ? 'text-muted-foreground' : 'text-foreground'
+                      <h3 className={`font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors ${
+                        letter.isRead ? 'text-muted-foreground' : headingClasses
                       }`}>
                         {letter.title}
                       </h3>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>Received {letter.receivedAt}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {letter.senderInterests.slice(0, 2).map((interest) => (
-                          <Badge key={interest} variant="outline" className="text-xs">
+                      <div className="flex flex-wrap gap-2">
+                        {letter.senderInterests.slice(0, 3).map((interest) => (
+                          <Badge key={interest} variant="secondary" className="text-xs">
                             {interest}
                           </Badge>
                         ))}
@@ -190,29 +245,30 @@ const Inbox = () => {
           </div>
 
           {/* Letter Reader */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             {selectedLetter ? (
-              <Card className="shadow-letter bg-letter-paper min-h-[600px]">
-                <CardHeader className="border-b border-vintage-red/20">
+              <Card className="shadow-letter border-none bg-white/95 backdrop-blur-sm min-h-[700px]">
+                <CardHeader className="border-b border-primary/10 bg-gradient-to-r from-primary/5 to-transparent">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-3 flex-1">
+                    <div className="space-y-4 flex-1">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/10">
-                          <MapPin className="h-4 w-4 text-primary" />
+                        <div className="p-3 rounded-full bg-primary/10 border border-primary/20">
+                          <MapPin className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h2 className="font-heading font-semibold text-xl">
+                          <h2 className={`text-2xl ${headingClasses}`}>
                             {selectedLetter.title}
                           </h2>
-                          <p className="text-muted-foreground">
-                            From {selectedLetter.senderCountry} • Travel time: {selectedLetter.deliveryTime}
+                          <p className={`${bodyClasses} text-base`}>
+                            From {selectedLetter.senderCountry} • Journey time: {selectedLetter.deliveryTime}
                           </p>
                         </div>
                       </div>
                       
                       <div className="flex flex-wrap gap-2">
                         {selectedLetter.senderInterests.map((interest) => (
-                          <Badge key={interest} variant="secondary">
+                          <Badge key={interest} className="bg-primary/10 text-primary border-primary/20">
+                            <Heart className="h-3 w-3 mr-1" />
                             {interest}
                           </Badge>
                         ))}
@@ -220,43 +276,73 @@ const Inbox = () => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="border-primary/20 hover:bg-primary/10">
                         <Archive className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="pt-6">
-                  <div className="prose prose-sm max-w-none">
-                    <div className="whitespace-pre-wrap text-foreground leading-relaxed font-body">
+                <CardContent className="pt-8">
+                  <div className="prose prose-lg max-w-none">
+                    <div className={`whitespace-pre-wrap text-foreground leading-relaxed ${bodyClasses} text-base`}>
                       {selectedLetter.content}
                     </div>
                   </div>
                   
-                  <Separator className="my-8" />
+                  <Separator className="my-8 bg-primary/10" />
                   
                   <div className="flex justify-center">
-                    <Button variant="letter" size="lg">
-                      <Reply className="h-4 w-4 mr-2" />
+                    <Button 
+                      variant="letter" 
+                      size="lg"
+                      className="bg-primary hover:bg-primary/90 text-white font-alata text-lg px-8 py-6 shadow-lg hover:scale-105 transition-all duration-300"
+                      onClick={() => navigate('/write')}
+                    >
+                      <Reply className="h-5 w-5 mr-2" />
                       Write a Response
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="shadow-vintage min-h-[600px] flex items-center justify-center">
-                <CardContent className="text-center space-y-4">
-                  <div className="p-8 rounded-full bg-muted/30 w-fit mx-auto">
-                    <Eye className="h-12 w-12 text-muted-foreground" />
+              <Card className="shadow-vintage border-none bg-white/95 backdrop-blur-sm min-h-[700px] flex items-center justify-center">
+                <CardContent className="text-center space-y-6">
+                  <div className="flex justify-center mb-4">
+                    <AnimateSvg
+                      width="120"
+                      height="120"
+                      viewBox="0 0 100 100"
+                      className="mx-auto"
+                      path="M20,20 L80,20 L80,80 L20,80 Z M20,20 L50,50 L80,20 M20,30 L50,60 L80,30"
+                      strokeColor="#94a3b8"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      animationDuration={2}
+                      animationDelay={0}
+                      animationBounce={0.1}
+                      reverseAnimation={false}
+                      enableHoverAnimation={true}
+                      hoverAnimationType="pulse"
+                      hoverStrokeColor="#4f46e5"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="font-heading text-xl font-semibold">
+                  <div className="space-y-4">
+                    <h3 className={`text-2xl ${headingClasses}`}>
                       Select a Letter to Read
                     </h3>
-                    <p className="text-muted-foreground">
-                      Choose a delivered letter from your inbox to read its contents
+                    <p className={`text-lg max-w-md mx-auto ${bodyClasses}`}>
+                      Choose a delivered letter from your inbox to read its heartfelt contents
                     </p>
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      className="border-primary/20 hover:bg-primary/10 font-alata"
+                      onClick={() => navigate('/write')}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Write Your First Letter
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

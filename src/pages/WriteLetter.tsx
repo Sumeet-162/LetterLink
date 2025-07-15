@@ -28,7 +28,7 @@ const WriteLetter = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-paper p-6">
+    <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <Card className="shadow-vintage">

@@ -52,7 +52,7 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-paper">
+    <div className="min-h-screen">
       {/* Header */}
       <header id="header" className="relative overflow-hidden h-screen flex items-center justify-center">
         <NavigationBar />
@@ -320,6 +320,15 @@ const Landing = () => {
           </div>
         </div>
       </section>
+      
+      {/* Footer with credit */}
+      <footer className="py-8 bg-white/50 backdrop-blur-sm border-t border-primary/10">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-sm text-foreground/70 font-alata italic">
+            Made with love by Sumeet ❤️
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
