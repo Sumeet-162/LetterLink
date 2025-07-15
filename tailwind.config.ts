@@ -79,7 +79,8 @@ export default {
 			},
 			fontFamily: {
 				'heading': 'var(--font-heading)',
-				'body': 'var(--font-body)'
+				'body': 'var(--font-body)',
+				alata: ['Alata', 'sans-serif'],
 			},
 			transitionTimingFunction: {
 				'smooth': 'var(--transition-smooth)',
