@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimateSvg } from "@/components/ui/AnimateSvg";
 import { useNavigate } from "react-router-dom";
+import { API_CONFIG, apiCall } from "@/lib/api";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -19,49 +20,30 @@ const SignIn = () => {
     setError("");
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const data = await apiCall(API_CONFIG.endpoints.auth.login, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store the token
-        localStorage.setItem('token', data.token);
+      // Store the token
+      localStorage.setItem('token', data.token);
+      
+      // Check if profile is completed
+      try {
+        const profileData = await apiCall(API_CONFIG.endpoints.profile.status);
         
-        // Check if profile is completed
-        try {
-          const profileResponse = await fetch('http://localhost:5000/api/profile/status', {
-            headers: {
-              'Authorization': `Bearer ${data.token}`
-            }
-          });
-          
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            if (profileData.profileCompleted) {
-              navigate('/dashboard');
-            } else {
-              navigate('/profile');
-            }
-          } else {
-            // If profile check fails, default to profile page
-            navigate('/profile');
-          }
-        } catch (profileError) {
-          // If profile check fails, default to profile page
+        if (profileData.profileCompleted) {
+          navigate('/dashboard');
+        } else {
           navigate('/profile');
         }
-      } else {
-        setError(data.message || "Login failed");
+      } catch (profileError) {
+        // If profile check fails, default to profile page
+        navigate('/profile');
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError("Failed to connect to server");
+      setError(error instanceof Error ? error.message : "Failed to connect to server");
     } finally {
       setIsLoading(false);
     }

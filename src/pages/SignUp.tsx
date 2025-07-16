@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimateSvg } from "@/components/ui/AnimateSvg";
 import { useNavigate } from "react-router-dom";
+import { API_CONFIG, apiCall } from "@/lib/api";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -24,11 +25,8 @@ const SignUp = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const data = await apiCall(API_CONFIG.endpoints.auth.register, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
@@ -36,19 +34,13 @@ const SignUp = () => {
         })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store the token
-        localStorage.setItem('token', data.token);
-        // Navigate to profile completion for new users
-        navigate('/profile');
-      } else {
-        alert(data.message || "Registration failed");
-      }
+      // Store the token
+      localStorage.setItem('token', data.token);
+      // Navigate to profile completion for new users
+      navigate('/profile');
     } catch (error) {
       console.error('Registration error:', error);
-      alert("Failed to connect to server");
+      alert(error instanceof Error ? error.message : "Failed to connect to server");
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_CONFIG, apiCall } from "@/lib/api";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,26 +26,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
       try {
         // Check if token is valid and get profile status
-        const response = await fetch('http://localhost:5000/api/profile/status', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (requireProfileCompletion && !data.profileCompleted) {
-            navigate('/profile');
-            return;
-          }
-          
-          setIsAuthenticated(true);
-        } else {
-          // Token is invalid
-          localStorage.removeItem('token');
-          navigate('/signin');
+        const data = await apiCall(API_CONFIG.endpoints.profile.status);
+        
+        if (requireProfileCompletion && !data.profileCompleted) {
+          navigate('/profile');
+          return;
         }
+        
+        setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth check failed:', error);
         localStorage.removeItem('token');

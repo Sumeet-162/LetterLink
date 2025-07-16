@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { User, MapPin, Clock, Heart, X } from "lucide-react";
+import { API_CONFIG, apiCall } from "@/lib/api";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -32,7 +33,7 @@ const Profile = () => {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/api/profile', {
+        const response = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.profile.update}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -80,12 +81,8 @@ const Profile = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/profile', {
+      const data = await apiCall(API_CONFIG.endpoints.profile.update, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({
           name: formData.name,
           country: formData.country,
@@ -95,19 +92,13 @@ const Profile = () => {
         })
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess("Profile updated successfully!");
-        // Navigate to dashboard after successful profile completion
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
-      } else {
-        setError(data.message || "Failed to update profile");
-      }
+      setSuccess("Profile updated successfully!");
+      // Navigate to dashboard after successful profile completion
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
     } catch (error) {
-      setError("Failed to connect to server");
+      setError(error instanceof Error ? error.message : "Failed to connect to server");
       console.error('Profile update error:', error);
     } finally {
       setLoading(false);
