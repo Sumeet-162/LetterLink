@@ -11,7 +11,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:8081', // This is where your frontend is running
+  origin: [
+    'http://localhost:8081', // Development
+    'https://your-frontend-domain.vercel.app' // Replace with your actual frontend domain
+  ],
   credentials: true
 }));
 app.use(express.json());
