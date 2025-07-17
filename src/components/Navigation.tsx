@@ -41,6 +41,7 @@ import "@/styles/fonts.css";
 // Navigation links array to be used in both desktop and mobile menus
 const navigationLinks = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/write", label: "Compose", icon: PenTool },
   { href: "/inbox", label: "Inbox", icon: Mail },
   { href: "/friends", label: "Friends", icon: Users },
   { href: "/drafts", label: "Drafts", icon: FileText },

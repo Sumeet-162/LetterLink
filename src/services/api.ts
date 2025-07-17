@@ -1,0 +1,607 @@
+const API_BASE = 'http://localhost:5000/api';
+
+// Get auth token from localStorage
+const getAuthToken = () => {
+  return localStorage.getItem('token') || localStorage.getItem('authToken');
+};
+
+// Create headers with auth token
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  console.log('Auth token:', token ? 'Present' : 'Missing');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` })
+  };
+};
+
+// Auth API calls
+export const authAPI = {
+  login: async (credentials: { email: string; password: string }) => {
+    const response = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Login failed');
+    }
+    
+    const data = await response.json();
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('authToken', data.token); // Store both for compatibility
+    }
+    return data;
+  },
+
+  register: async (userData: { username: string; email: string; password: string }) => {
+    const response = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Registration failed');
+    }
+    
+    const data = await response.json();
+    if (data.token) {
+      localStorage.setItem('authToken', data.token);
+    }
+    return data;
+  },
+
+  getCurrentUser: async () => {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get current user');
+    }
+    
+    return response.json();
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+  }
+};
+
+// Profile API calls
+export const profileAPI = {
+  getProfile: async () => {
+    const response = await fetch(`${API_BASE}/profile`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get profile');
+    }
+    
+    return response.json();
+  },
+
+  updateProfile: async (profileData: {
+    name: string;
+    country: string;
+    timezone?: string;
+    bio?: string;
+    interests: string[];
+  }) => {
+    const response = await fetch(`${API_BASE}/profile`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(profileData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update profile');
+    }
+    
+    return response.json();
+  },
+
+  checkProfileStatus: async () => {
+    const response = await fetch(`${API_BASE}/profile/status`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to check profile status');
+    }
+    
+    return response.json();
+  }
+};
+
+// Friends API calls
+export const friendsAPI = {
+  getFriends: async () => {
+    const response = await fetch(`${API_BASE}/friends`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get friends');
+    }
+    
+    return response.json();
+  },
+
+  searchUsers: async (query: string) => {
+    console.log('API: Searching for:', query);
+    const url = `${API_BASE}/friends/search?q=${encodeURIComponent(query)}`;
+    console.log('API: Request URL:', url);
+    
+    const response = await fetch(url, {
+      headers: getAuthHeaders()
+    });
+    
+    console.log('API: Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API: Error response:', errorText);
+      throw new Error(`Failed to search users: ${response.status} - ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('API: Response data:', data);
+    return data;
+  },
+
+  getFriendDetails: async (friendId: string) => {
+    const response = await fetch(`${API_BASE}/friends/${friendId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get friend details');
+    }
+    
+    return response.json();
+  },
+
+  getFriendTimeWeather: async (friendId: string) => {
+    const response = await fetch(`${API_BASE}/friends/${friendId}/time-weather`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get friend time/weather');
+    }
+    
+    return response.json();
+  },
+
+  addFriend: async (friendId: string) => {
+    const response = await fetch(`${API_BASE}/friends`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ friendId })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to add friend');
+    }
+    
+    return response.json();
+  },
+
+  // Send friend request with letter
+  sendFriendRequest: async (requestData: {
+    recipientId: string;
+    subject: string;
+    content: string;
+  }) => {
+    const response = await fetch(`${API_BASE}/friends/request`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to send friend request: ${response.status} ${errorText}`);
+    }
+    
+    return response.json();
+  },
+
+  // Get pending friend requests
+  getFriendRequests: async () => {
+    const response = await fetch(`${API_BASE}/friends/requests`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get friend requests');
+    }
+    
+    return response.json();
+  },
+
+  // Accept friend request
+  acceptFriendRequest: async (requestId: string) => {
+    const response = await fetch(`${API_BASE}/friends/requests/${requestId}/accept`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to accept friend request');
+    }
+    
+    return response.json();
+  },
+
+  // Reject friend request
+  rejectFriendRequest: async (requestId: string) => {
+    const response = await fetch(`${API_BASE}/friends/requests/${requestId}/reject`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to reject friend request');
+    }
+    
+    return response.json();
+  }
+};
+
+// Letters API calls
+export const lettersAPI = {
+  getInbox: async () => {
+    const response = await fetch(`${API_BASE}/letters/inbox`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get inbox');
+    }
+    
+    return response.json();
+  },
+
+  getSentLetters: async () => {
+    const response = await fetch(`${API_BASE}/letters/sent`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get sent letters');
+    }
+    
+    return response.json();
+  },
+
+  getLetterById: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/letters/${letterId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get letter');
+    }
+    
+    return response.json();
+  },
+
+  sendLetter: async (letterData: {
+    recipientId: string;
+    subject: string;
+    content: string;
+    deliveryDelay?: number;
+  }) => {
+    const response = await fetch(`${API_BASE}/letters`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(letterData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send letter');
+    }
+    
+    return response.json();
+  },
+
+  replyToLetter: async (replyData: {
+    letterId: string;
+    subject: string;
+    content: string;
+    deliveryDelay?: number;
+  }) => {
+    const response = await fetch(`${API_BASE}/letters/reply`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(replyData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to reply to letter');
+    }
+    
+    return response.json();
+  },
+
+  getConversation: async (friendId: string) => {
+    const response = await fetch(`${API_BASE}/letters/conversation/${friendId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get conversation');
+    }
+    
+    return response.json();
+  },
+
+  getMatchedRecipients: async () => {
+    const response = await fetch(`${API_BASE}/letters/matched-recipients`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get matched recipients');
+    }
+    
+    return response.json();
+  },
+
+  // Mark letter as read
+  markLetterAsRead: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/letters/${letterId}/read`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to mark letter as read');
+    }
+    
+    return response.json();
+  },
+  
+  // Send random match letter
+  sendRandomMatchLetter: async (letterData: {
+    subject: string;
+    content: string;
+    interests: string[];
+  }) => {
+    console.log('Sending random match letter to:', `${API_BASE}/letters/random-match`);
+    console.log('Headers:', getAuthHeaders());
+    console.log('Data:', letterData);
+    
+    const response = await fetch(`${API_BASE}/letters/random-match`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(letterData)
+    });
+    
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`Failed to send random match letter: ${response.status} ${errorText}`);
+    }
+    
+    return response.json();
+  }
+};
+
+// Drafts API calls
+export const draftsAPI = {
+  getDrafts: async () => {
+    const response = await fetch(`${API_BASE}/drafts`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get drafts');
+    }
+    
+    return response.json();
+  },
+
+  getDraftById: async (draftId: string) => {
+    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get draft');
+    }
+    
+    return response.json();
+  },
+
+  createDraft: async (draftData: {
+    recipientId: string;
+    subject: string;
+    content: string;
+    type?: 'letter' | 'reply';
+    replyTo?: string;
+    deliveryDelay?: number;
+  }) => {
+    const response = await fetch(`${API_BASE}/drafts`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(draftData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create draft');
+    }
+    
+    return response.json();
+  },
+
+  updateDraft: async (draftId: string, draftData: {
+    subject?: string;
+    content?: string;
+    deliveryDelay?: number;
+  }) => {
+    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(draftData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update draft');
+    }
+    
+    return response.json();
+  },
+
+  deleteDraft: async (draftId: string) => {
+    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete draft');
+    }
+    
+    return response.json();
+  },
+
+  getDraftStats: async () => {
+    const response = await fetch(`${API_BASE}/drafts/stats`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get draft stats');
+    }
+    
+    return response.json();
+  }
+};
+
+// Letter cycle API calls
+export const letterCycleAPI = {
+  getNextCycleInfo: async () => {
+    const response = await fetch(`${API_BASE}/letters/cycle/next`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get cycle information');
+    }
+    
+    return response.json();
+  },
+
+  triggerCycle: async () => {
+    const response = await fetch(`${API_BASE}/letters/cycle/trigger`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to trigger cycle');
+    }
+    
+    return response.json();
+  },
+
+  getArchivedLetters: async () => {
+    const response = await fetch(`${API_BASE}/letters/archived`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get archived letters');
+    }
+    
+    return response.json();
+  }
+};
+
+// Main API object combining all APIs
+export const api = {
+  // Auth methods
+  ...authAPI,
+  
+  // Profile methods
+  getProfile: profileAPI.getProfile,
+  updateProfile: profileAPI.updateProfile,
+  checkProfileStatus: profileAPI.checkProfileStatus,
+  
+  // Friends methods
+  getFriends: friendsAPI.getFriends,
+  searchUsers: friendsAPI.searchUsers,
+  getFriendDetails: friendsAPI.getFriendDetails,
+  getFriendTimeWeather: friendsAPI.getFriendTimeWeather,
+  addFriend: friendsAPI.addFriend,
+  sendFriendRequest: friendsAPI.sendFriendRequest,
+  getFriendRequests: friendsAPI.getFriendRequests,
+  acceptFriendRequest: friendsAPI.acceptFriendRequest,
+  rejectFriendRequest: friendsAPI.rejectFriendRequest,
+  
+  // Letters methods
+  getInboxLetters: lettersAPI.getInbox,
+  getSentLetters: lettersAPI.getSentLetters,
+  getLetterById: lettersAPI.getLetterById,
+  sendLetter: lettersAPI.sendLetter,
+  replyToLetter: lettersAPI.replyToLetter,
+  getConversation: lettersAPI.getConversation,
+  getMatchedRecipients: lettersAPI.getMatchedRecipients,
+  
+  // Mark letter as read
+  markLetterAsRead: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/letters/${letterId}/read`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to mark letter as read');
+    }
+    
+    return response.json();
+  },
+  
+  // Send random match letter
+  sendRandomMatchLetter: async (letterData: {
+    subject: string;
+    content: string;
+    interests: string[];
+  }) => {
+    const response = await fetch(`${API_BASE}/letters/random-match`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(letterData)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send random match letter');
+    }
+    
+    return response.json();
+  },
+  
+  // Drafts methods
+  getDrafts: draftsAPI.getDrafts,
+  getDraftById: draftsAPI.getDraftById,
+  createDraft: draftsAPI.createDraft,
+  updateDraft: draftsAPI.updateDraft,
+  deleteDraft: draftsAPI.deleteDraft,
+  getDraftStats: draftsAPI.getDraftStats,
+  
+  // Letter cycle methods
+  getNextCycleInfo: letterCycleAPI.getNextCycleInfo,
+  triggerCycle: letterCycleAPI.triggerCycle,
+  getArchivedLetters: letterCycleAPI.getArchivedLetters
+};

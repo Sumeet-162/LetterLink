@@ -1,11 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { FileText, Clock, Search, Edit3, Trash2, Send, Save, Eye } from "lucide-react";
-import { AnimateSvg } from "@/components/ui/AnimateSvg";
+import { Search, Edit3, Trash2, Send, Clock, FileText, Eye } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import "@/styles/fonts.css";
 
@@ -18,47 +16,116 @@ interface Draft {
   wordCount: number;
   isComplete: boolean;
   tags: string[];
+  originalLetter?: {
+    id: string;
+    title: string;
+    content: string;
+    sender: string;
+    dateSent: string;
+  };
+  friend?: {
+    id: string;
+    name: string;
+    country: string;
+    interests: string[];
+  };
 }
 
 const Drafts = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [drafts] = useState<Draft[]>([
+  const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [sortBy, setSortBy] = useState<"recent" | "title">("recent");
+  const [completedDrafts, setCompletedDrafts] = useState<string[]>([]);
+  
+  // Load completed drafts from localStorage on component mount
+  useEffect(() => {
+    const completed = JSON.parse(localStorage.getItem('completedDrafts') || '[]');
+    setCompletedDrafts(completed);
+  }, []);
+
+  const [allDrafts] = useState<Draft[]>([
     {
       id: "1",
-      title: "Letter to Maria about Barcelona",
+      title: "Re: Letter to Maria about Barcelona",
       recipient: "Maria",
-      content: "Dear Maria, I hope this letter finds you well. I wanted to tell you about my recent trip to Barcelona...",
+      content: "Dear Maria, Thank you for your wonderful letter about your trip to Barcelona. I'm so glad you enjoyed the Sagrada Familia - it truly is breathtaking! I wanted to share my own experience when I visited there last summer...",
       lastEdited: "2 hours ago",
-      wordCount: 287,
+      wordCount: 187,
       isComplete: false,
-      tags: ["Travel", "Personal"]
+      tags: ["Travel", "Personal"],
+      originalLetter: {
+        id: "letter-1",
+        title: "My Barcelona Adventure",
+        content: "Dear friend, I just returned from the most amazing trip to Barcelona! The architecture, the food, the culture - everything was incredible. I spent hours at the Sagrada Familia, and I couldn't stop thinking about our conversations about art and spirituality...",
+        sender: "Maria",
+        dateSent: "2024-01-15"
+      },
+      friend: {
+        id: "friend-1",
+        name: "Maria",
+        country: "Spain",
+        interests: ["Travel", "Architecture", "Art"]
+      }
     },
     {
       id: "2",
-      title: "Thoughts on mindfulness",
-      content: "I've been thinking a lot about mindfulness lately and how it affects our daily lives. There's something profound about being present...",
+      title: "Re: Thoughts on mindfulness",
+      recipient: "Akira",
+      content: "Dear Akira, Your letter about mindfulness really resonated with me. I've been trying to incorporate more mindful practices into my daily routine, and I wanted to share some insights I've discovered...",
       lastEdited: "1 day ago",
       wordCount: 156,
       isComplete: false,
-      tags: ["Philosophy", "Personal Growth"]
+      tags: ["Philosophy", "Personal Growth"],
+      originalLetter: {
+        id: "letter-2",
+        title: "Finding Peace in Daily Life",
+        content: "My dear friend, I've been reflecting on our last conversation about finding peace in our busy lives. I wanted to share some thoughts on mindfulness that have been helping me lately...",
+        sender: "Akira",
+        dateSent: "2024-01-10"
+      },
+      friend: {
+        id: "friend-2",
+        name: "Akira",
+        country: "Japan",
+        interests: ["Philosophy", "Mindfulness", "Nature"]
+      }
     },
     {
       id: "3",
-      title: "Thank you note to grandmother",
+      title: "Re: Thank you for the recipe",
       recipient: "Grandma Rose",
-      content: "Dear Grandma Rose, I wanted to take a moment to thank you for the wonderful weekend we spent together...",
+      content: "Dear Grandma Rose, Thank you so much for sharing your famous apple pie recipe! I tried making it last weekend, and it turned out wonderfully. The whole house smelled amazing, and it brought back so many memories of our time together in the kitchen...",
       lastEdited: "3 days ago",
       wordCount: 423,
-      isComplete: true,
-      tags: ["Family", "Gratitude"]
+      isComplete: false,
+      tags: ["Family", "Gratitude"],
+      originalLetter: {
+        id: "letter-3",
+        title: "Family Recipe to Share",
+        content: "My dearest grandchild, I was going through my recipe box today and found the apple pie recipe you've been asking about. I thought it was time to share this family treasure with you...",
+        sender: "Grandma Rose",
+        dateSent: "2024-01-05"
+      },
+      friend: {
+        id: "friend-3",
+        name: "Grandma Rose",
+        country: "USA",
+        interests: ["Cooking", "Family", "Traditions"]
+      }
     }
   ]);
 
-  // Font combinations matching Landing page
-  const headingClasses = "font-alata font-semibold tracking-tight";
-  const bodyClasses = "font-spectral text-muted-foreground leading-relaxed";
-  const accentClasses = "font-alata font-medium tracking-wide";
+  // Filter out completed drafts (both from localStorage and hardcoded isComplete)
+  const drafts = allDrafts.filter(draft => 
+    !completedDrafts.includes(draft.id) && !draft.isComplete
+  );
+
+  // Font combinations with Inter replacing Alata
+  const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
+  const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
+  const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
   const filteredDrafts = drafts.filter(draft =>
     draft.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,251 +136,332 @@ const Drafts = () => {
     )
   );
 
+  // Sort drafts based on selected criteria
+  const sortedDrafts = [...filteredDrafts].sort((a, b) => {
+    switch (sortBy) {
+      case "title":
+        return a.title.localeCompare(b.title);
+      case "recent":
+      default:
+        return new Date(b.lastEdited).getTime() - new Date(a.lastEdited).getTime();
+    }
+  });
+
   const handleEditDraft = (draft: Draft) => {
-    navigate('/write', { state: { draft } });
+    // If it's a reply draft with original letter context, go to reply page
+    if (draft.originalLetter && draft.friend) {
+      navigate('/reply', { 
+        state: { 
+          replyTo: draft.originalLetter, 
+          friend: draft.friend,
+          existingDraft: draft 
+        } 
+      });
+    } else {
+      // If it's a new letter draft, go to write page
+      navigate('/write', { state: { draft } });
+    }
   };
 
   const handleDeleteDraft = (draftId: string) => {
-    // TODO: Implement delete functionality
-    console.log("Delete draft:", draftId);
+    // Add to completed drafts list
+    const newCompletedDrafts = [...completedDrafts, draftId];
+    setCompletedDrafts(newCompletedDrafts);
+    localStorage.setItem('completedDrafts', JSON.stringify(newCompletedDrafts));
   };
 
   const handleSendDraft = (draft: Draft) => {
     navigate('/write', { state: { draft, autoSend: true } });
   };
 
-  const formatDate = (dateString: string) => {
-    return dateString;
+  const handlePreviewDraft = (draft: Draft) => {
+    setSelectedDraft(draft);
+    setShowPreview(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreview(false);
+    setSelectedDraft(null);
   };
 
   const getCompletionColor = (isComplete: boolean) => {
     return isComplete ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800";
   };
 
+  const handleClearCompleted = () => {
+    setCompletedDrafts([]);
+    localStorage.removeItem('completedDrafts');
+  };
+
   return (
     <div className="min-h-screen pt-16">
       <Navigation />
       
-      {/* Header Section */}
-      <div className="relative overflow-hidden bg-white/90 backdrop-blur-sm border-b border-primary/10">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center space-y-6">
-            <div className="flex justify-center mb-6">
-              <AnimateSvg
-                width="80"
-                height="80"
-                viewBox="0 0 100 100"
-                className="mx-auto"
-                path="M20,15 L80,15 L80,85 L20,85 Z M20,15 L50,45 L80,15 M25,25 L45,45 M75,25 L55,45"
-                strokeColor="#4f46e5"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                animationDuration={2}
-                animationDelay={0}
-                animationBounce={0.2}
-                reverseAnimation={false}
-                enableHoverAnimation={true}
-                hoverAnimationType="pulse"
-                hoverStrokeColor="#6366f1"
-              />
-            </div>
-            <h1 className={`text-4xl lg:text-5xl text-foreground ${headingClasses}`}>
-              Your Drafts
-            </h1>
-            <p className={`text-xl max-w-2xl mx-auto ${bodyClasses}`}>
-              Continue writing your letters or save them for later
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          {/* Search Bar & Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 shadow-vintage border-none bg-white/90 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search drafts by title, content, or recipient..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/50 border-primary/20 focus:border-primary"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-vintage border-none bg-white/90 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <p className={`text-2xl font-semibold ${headingClasses}`}>
-                    {drafts.length}
-                  </p>
-                  <p className={`text-sm ${bodyClasses}`}>Total Drafts</p>
-                  <div className="mt-2 flex justify-center gap-2">
-                    <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
-                      {drafts.filter(d => !d.isComplete).length} In Progress
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                      {drafts.filter(d => d.isComplete).length} Complete
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Drafts List */}
-          <div className="space-y-4">
-            {filteredDrafts.map((draft) => (
-              <Card 
-                key={draft.id}
-                className="shadow-letter border-none bg-white/90 backdrop-blur-sm group hover:shadow-vintage transition-all duration-300 hover:-translate-y-1"
+        {/* Header */}
+        <div className="text-left bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-letter border-none mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses}`}>
+                Your Drafts
+              </h2>
+              <img className="h-16 w-16" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="" />
+            </div>
+            {completedDrafts.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearCompleted}
+                className="border-primary/20 hover:bg-primary/10 text-primary"
               >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-full bg-gradient-to-r from-primary/10 to-primary/20 border border-primary/20">
-                        <FileText className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className={`text-lg ${headingClasses}`}>
-                          {draft.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          Last edited {formatDate(draft.lastEdited)}
-                          {draft.recipient && (
-                            <>
-                              <span>•</span>
-                              <span>To: {draft.recipient}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge 
-                      variant="secondary" 
-                      className={`${getCompletionColor(draft.isComplete)} text-xs`}
-                    >
-                      {draft.isComplete ? "Complete" : "In Progress"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Content Preview */}
-                  <div className="space-y-2">
-                    <p className={`text-sm line-clamp-2 ${bodyClasses}`}>
-                      {draft.content}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>{draft.wordCount} words</span>
-                      <div className="flex gap-1">
-                        {draft.tags.map((tag) => (
-                          <Badge 
-                            key={tag} 
-                            variant="secondary" 
-                            className="text-xs bg-primary/10 text-primary"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="letter"
-                      size="sm"
-                      className="bg-primary hover:bg-primary/90 text-white font-alata"
-                      onClick={() => handleEditDraft(draft)}
-                    >
-                      <Edit3 className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    
-                    {draft.isComplete && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-green-200 hover:bg-green-50 text-green-700"
-                        onClick={() => handleSendDraft(draft)}
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        Send
-                      </Button>
-                    )}
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-primary/20 hover:bg-primary/10"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-red-200 hover:bg-red-50 text-red-600"
-                      onClick={() => handleDeleteDraft(draft.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                Restore All Drafts
+              </Button>
+            )}
           </div>
-
-          {/* Empty State */}
-          {filteredDrafts.length === 0 && (
-            <Card className="shadow-vintage border-none bg-white/95 backdrop-blur-sm">
-              <CardContent className="text-center py-12">
-                <div className="flex justify-center mb-6">
-                  <AnimateSvg
-                    width="120"
-                    height="120"
-                    viewBox="0 0 100 100"
-                    className="mx-auto"
-                    path="M20,15 L80,15 L80,85 L20,85 Z M30,30 L70,30 M30,45 L70,45 M30,60 L55,60"
-                    strokeColor="#94a3b8"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    animationDuration={2}
-                    animationDelay={0}
-                    animationBounce={0.1}
-                    reverseAnimation={false}
-                    enableHoverAnimation={true}
-                    hoverAnimationType="pulse"
-                    hoverStrokeColor="#4f46e5"
-                  />
-                </div>
-                <h3 className={`text-2xl ${headingClasses} mb-4`}>
-                  No drafts found
-                </h3>
-                <p className={`text-lg max-w-md mx-auto ${bodyClasses} mb-6`}>
-                  {searchTerm ? "Try a different search term" : "Start writing a letter to create your first draft"}
-                </p>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-primary/20 hover:bg-primary/10 font-alata"
-                  onClick={() => navigate('/write')}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Write Your First Letter
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          <p className={`text-lg text-foreground/80 ${bodyClasses}`}>
+            Continue your unfinished letters and thoughts. Every draft is a step toward meaningful connection.
+          </p>
         </div>
+
+        {/* Search and Stats */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6 mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-foreground/50" />
+              <Input
+                placeholder="Search drafts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/50 backdrop-blur-sm border-primary/20 focus:border-primary/40 font-spectral"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`text-sm ${accentClasses}`}>Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "recent" | "title")}
+                className="px-3 py-1 text-sm border border-primary/20 rounded-md bg-white/50 backdrop-blur-sm focus:border-primary/40 focus:outline-none font-spectral"
+              >
+                <option value="recent">Recent</option>
+                <option value="title">Title</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-6 text-sm">
+            <div className="text-center">
+              <div className={`text-2xl font-semibold ${headingClasses}`}>
+                {drafts.length}
+              </div>
+              <div className={`${accentClasses}`}>Active Drafts</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-semibold ${headingClasses}`}>
+                {drafts.reduce((sum, draft) => sum + draft.wordCount, 0)}
+              </div>
+              <div className={`${accentClasses}`}>Total Words</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Drafts Grid */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {sortedDrafts.map((draft) => (
+            <div
+              key={draft.id}
+              className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6 hover:shadow-xl transition-all duration-300 group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <div>
+                    <h3 className={`font-semibold text-foreground ${headingClasses} group-hover:text-primary transition-colors`}>
+                      {draft.title}
+                    </h3>
+                    <p className={`text-sm ${accentClasses} flex items-center gap-1`}>
+                      <Clock className="h-3 w-3" />
+                      {draft.lastEdited}
+                    </p>
+                  </div>
+                </div>
+                <Badge className={getCompletionColor(draft.isComplete)}>
+                  {draft.isComplete ? "Complete" : "Draft"}
+                </Badge>
+              </div>
+
+              {draft.recipient && (
+                <div className={`text-sm ${bodyClasses} mb-2`}>
+                  <strong>To:</strong> {draft.recipient}
+                </div>
+              )}
+
+              <p className={`text-sm ${bodyClasses} mb-4 line-clamp-3`}>
+                {draft.content}
+              </p>
+
+              <div className="flex flex-wrap gap-2 mb-4">
+                {draft.tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="outline"
+                    className="text-xs border-primary/20 text-foreground/70"
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between text-sm">
+                <span className={`${accentClasses}`}>
+                  {draft.wordCount} words
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePreviewDraft(draft)}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditDraft(draft)}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteDraft(draft.id)}
+                    className="border-red-200 hover:bg-red-50 text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  {draft.isComplete && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleSendDraft(draft)}
+                      className="border-green-200 hover:bg-green-50 text-green-600"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Empty State */}
+        {sortedDrafts.length === 0 && (
+          <div className="text-center py-12">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-8 max-w-md mx-auto">
+              <FileText className="h-16 w-16 mx-auto mb-4 text-primary/60" />
+              <h3 className={`text-lg font-semibold ${headingClasses} mb-2`}>
+                {searchTerm ? "No drafts found" : 
+                 completedDrafts.length > 0 ? "All drafts completed!" : "No drafts yet"}
+              </h3>
+              <p className={`${bodyClasses} mb-4`}>
+                {searchTerm 
+                  ? "Try adjusting your search terms" 
+                  : completedDrafts.length > 0 
+                    ? "Great job! All your drafts have been sent. You can restore them using the button above or write new letters."
+                    : "Start writing your first letter to create a draft"
+                }
+              </p>
+              <Button
+                onClick={() => navigate('/write')}
+                className="bg-primary hover:bg-primary/90 text-white font-inter"
+              >
+                {completedDrafts.length > 0 ? "Write New Letter" : "Write Your First Letter"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Draft Preview Modal */}
+        {showPreview && selectedDraft && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-2xl border-none max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="p-6 border-b border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className={`text-xl font-semibold ${headingClasses}`}>
+                        {selectedDraft.title}
+                      </h3>
+                      <p className={`text-sm ${accentClasses}`}>
+                        {selectedDraft.recipient ? `To: ${selectedDraft.recipient}` : "Draft letter"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClosePreview}
+                    className="text-foreground/60 hover:text-foreground"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <div className="prose max-w-none">
+                  <div className={`${bodyClasses} whitespace-pre-wrap`}>
+                    {selectedDraft.content}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t border-primary/20 flex justify-between">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className={`${accentClasses}`}>
+                    {selectedDraft.wordCount} words
+                  </span>
+                  <span className={`${accentClasses}`}>
+                    Last edited: {selectedDraft.lastEdited}
+                  </span>
+                  <div className="flex gap-2">
+                    {selectedDraft.tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="outline"
+                        className="text-xs border-primary/20 text-foreground/70"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleClosePreview}
+                    className="border-primary/20 hover:bg-primary/10 font-inter"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      handleClosePreview();
+                      handleEditDraft(selectedDraft);
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-white font-inter"
+                  >
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit Draft
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

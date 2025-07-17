@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,15 +9,25 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PenTool, Send, Users, Globe, Clock, MapPin, User, Heart, BookOpen } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { PenTool, Send, Users, Globe, Clock, MapPin, User, Heart, BookOpen, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { api } from "@/services/api";
 import "@/styles/fonts.css";
 
 const WriteLetter = () => {
+  const navigate = useNavigate();
+  
+  // Letter content state
   const [letterData, setLetterData] = useState({
     title: "",
     content: ""
   });
+
+  // Form state management
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // New targeting options
   const [selectedRegion, setSelectedRegion] = useState("worldwide");
@@ -181,19 +192,74 @@ const WriteLetter = () => {
                          selectedLanguages.length > 0 || relationshipStatus !== "any" || 
                          preferredWritingStyle !== "any";
 
-  const handleSubmit = () => {
-    console.log("Letter submitted:", letterData);
-    console.log("Targeting preferences:", {
-      region: selectedRegion,
-      countries: selectedCountries,
-      ageGroup: selectedAgeGroup,
-      gender: selectedGender,
-      interests: selectedInterests,
-      languages: selectedLanguages,
-      relationshipStatus,
-      writingStyle: preferredWritingStyle
-    });
-    // This would connect to Supabase when implemented
+  const handleSubmit = async () => {
+    // Reset previous states
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    
+    // Validate form
+    if (!letterData.title.trim()) {
+      setSubmitError("Please enter a letter title.");
+      return;
+    }
+    
+    if (!letterData.content.trim()) {
+      setSubmitError("Please write your letter content.");
+      return;
+    }
+    
+    if (letterData.content.length < 50) {
+      setSubmitError("Letter content should be at least 50 characters long.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare the letter data for the random match API
+      const randomMatchData = {
+        subject: letterData.title,
+        content: letterData.content,
+        interests: selectedInterests
+      };
+      
+      console.log("Sending random match letter:", randomMatchData);
+      console.log("Targeting preferences:", {
+        region: selectedRegion,
+        countries: selectedCountries,
+        ageGroup: selectedAgeGroup,
+        gender: selectedGender,
+        interests: selectedInterests,
+        languages: selectedLanguages,
+        relationshipStatus,
+        writingStyle: preferredWritingStyle
+      });
+      
+      // Send the letter via API
+      const response = await api.sendRandomMatchLetter(randomMatchData);
+      
+      console.log("Letter sent successfully:", response);
+      setSubmitSuccess(true);
+      
+      // Reset form after successful submission
+      setTimeout(() => {
+        setLetterData({ title: "", content: "" });
+        setSelectedInterests([]);
+        setSubmitSuccess(false);
+        // Optionally navigate to inbox or sent letters
+        navigate('/inbox');
+      }, 2000);
+      
+    } catch (error) {
+      console.error("Failed to send letter:", error);
+      setSubmitError(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to send letter. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -267,11 +333,26 @@ I hope this letter finds you well. I wanted to share..."
                       style={{ width: `${Math.min(contentProgress, 100)}%` }}
                     />
                   </div>
-                  {contentProgress > 90 && (
-                    <p className="text-sm text-amber-600">
-                      You're approaching the character limit!
-                    </p>
-                  )}
+                  
+                  {/* Character count feedback */}
+                  <div className="flex justify-between items-center text-xs">
+                    <div>
+                      {letterData.content.length < 50 ? (
+                        <span className="text-amber-600">
+                          Minimum 50 characters required ({50 - letterData.content.length} more needed)
+                        </span>
+                      ) : (
+                        <span className="text-green-600">
+                          ✓ Good length for a meaningful letter
+                        </span>
+                      )}
+                    </div>
+                    {contentProgress > 90 && (
+                      <span className="text-amber-600">
+                        Approaching character limit!
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -450,15 +531,54 @@ I hope this letter finds you well. I wanted to share..."
                 </div>
               </div>
 
+              {/* Submit Feedback Messages */}
+              {submitError && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    {submitError}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {submitSuccess && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Letter sent successfully! You'll be redirected to your inbox shortly.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               {/* Send Button */}
               <div className="flex justify-center pt-6 border-t border-primary/20 mt-6">
                 <Button 
                   className="bg-primary hover:bg-primary/90 text-white px-8 py-3 text-lg font-inter font-medium rounded-lg shadow-md transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!letterData.title || !letterData.content || letterData.content.length < 50 || matchedRecipients.length === 0}
+                  disabled={
+                    !letterData.title || 
+                    !letterData.content || 
+                    letterData.content.length < 50 || 
+                    isSubmitting ||
+                    submitSuccess
+                  }
                   onClick={handleSubmit}
                 >
-                  <Send className="w-5 h-5" />
-                  {matchedRecipients.length === 0 ? "No Recipients Found" : "Send Letter"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending Letter...
+                    </>
+                  ) : submitSuccess ? (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Letter Sent!
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      Send Letter
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

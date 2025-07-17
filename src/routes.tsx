@@ -7,6 +7,7 @@ import Profile from "@/pages/Profile";
 import WriteLetter from "@/pages/WriteLetter";
 import Inbox from "@/pages/Inbox";
 import ReplyLetter from "@/pages/ReplyLetter";
+import FriendConversation from "@/pages/FriendConversation";
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
   {
     path: "/reply",
     element: <ReplyLetter />,
+  },
+  {
+    path: "/friend-conversation",
+    element: <FriendConversation />,
   },
   {
     path: "*",

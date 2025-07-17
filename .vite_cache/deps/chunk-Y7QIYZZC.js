@@ -3,7 +3,7 @@ import {
 } from "./chunk-CFG2NWXR.js";
 import {
   Primitive
-} from "./chunk-S3VCBMDC.js";
+} from "./chunk-XXBLB2AM.js";
 import {
   require_react_dom
 } from "./chunk-I2MCD6RR.js";
@@ -35,4 +35,4 @@ Portal.displayName = PORTAL_NAME;
 export {
   Portal
 };
-//# sourceMappingURL=chunk-TGB2M2U7.js.map
+//# sourceMappingURL=chunk-Y7QIYZZC.js.map

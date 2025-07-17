@@ -14,19 +14,31 @@ interface Letter {
   id: string;
   title: string;
   content: string;
-  senderCountry: string;
-  senderInterests: string[];
+  senderCountry?: string;
+  senderInterests?: string[];
   status: "in-transit" | "delivered" | "sent-in-transit";
-  deliveryTime: string;
+  deliveryTime?: string;
   timeRemaining?: string;
   receivedAt?: string;
   isRead: boolean;
+  sender?: "user" | "friend";
+  dateSent?: string;
+}
+
+interface Friend {
+  id: string;
+  name: string;
+  country: string;
+  interests: string[];
+  lettersExchanged: number;
+  lastActive: string;
 }
 
 const ReplyLetter = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [originalLetter, setOriginalLetter] = useState<Letter | null>(null);
+  const [friend, setFriend] = useState<Friend | null>(null);
   const [replyTitle, setReplyTitle] = useState("");
   const [replyContent, setReplyContent] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -38,11 +50,18 @@ const ReplyLetter = () => {
   const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
   useEffect(() => {
-    // Get the original letter from the location state
-    if (location.state?.replyTo) {
+    // Get the original letter and friend from the location state
+    if (location.state?.replyTo && location.state?.friend) {
       const letter = location.state.replyTo as Letter;
+      const friendData = location.state.friend as Friend;
       setOriginalLetter(letter);
+      setFriend(friendData);
       setReplyTitle(`Re: ${letter.title}`);
+      
+      // If there's an existing draft, populate the content
+      if (location.state.existingDraft) {
+        setReplyContent(location.state.existingDraft.content);
+      }
     } else {
       // If no letter to reply to, redirect to inbox
       navigate('/inbox');
@@ -56,7 +75,7 @@ const ReplyLetter = () => {
   }, [replyContent]);
 
   const handleSendReply = async () => {
-    if (!replyContent.trim() || !originalLetter) return;
+    if (!replyContent.trim() || !originalLetter || !friend) return;
 
     setIsSending(true);
     
@@ -69,19 +88,70 @@ const ReplyLetter = () => {
         originalLetterId: originalLetter.id,
         replyTitle,
         replyContent,
-        recipientCountry: originalLetter.senderCountry
+        recipientCountry: friend.country,
+        recipientName: friend.name
       });
+
+      // If this was a draft being completed, mark it as sent and remove from drafts
+      if (location.state?.existingDraft) {
+        const draftId = location.state.existingDraft.id;
+        console.log("Marking draft as completed:", draftId);
+        
+        // In a real app, you would call an API to mark the draft as sent
+        // For now, we'll use localStorage to track completed drafts
+        const completedDrafts = JSON.parse(localStorage.getItem('completedDrafts') || '[]');
+        completedDrafts.push(draftId);
+        localStorage.setItem('completedDrafts', JSON.stringify(completedDrafts));
+      }
       
-      // Navigate back to inbox with success message
-      navigate('/inbox', { 
-        state: { 
-          message: "Your reply has been sent successfully!" 
-        }
-      });
+      // Navigate back to appropriate page with success message
+      if (friend?.id?.startsWith('inbox-')) {
+        // If replying to inbox letter, go back to inbox
+        navigate('/inbox', { 
+          state: { 
+            message: "Your reply has been sent successfully!" 
+          }
+        });
+      } else {
+        // If replying to friend letter, go back to friend conversation
+        navigate('/friend-conversation', { 
+          state: { 
+            friend,
+            message: "Your reply has been sent successfully!" 
+          }
+        });
+      }
     } catch (error) {
       console.error("Error sending reply:", error);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!replyContent.trim() || !originalLetter || !friend) return;
+
+    try {
+      // Simulate API call to save draft
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Handle successful draft save
+      console.log("Draft saved:", {
+        originalLetterId: originalLetter.id,
+        replyTitle,
+        replyContent,
+        friend: friend,
+        originalLetter: originalLetter
+      });
+      
+      // Navigate back to drafts page with success message
+      navigate('/drafts', { 
+        state: { 
+          message: "Your reply has been saved as a draft!" 
+        }
+      });
+    } catch (error) {
+      console.error("Error saving draft:", error);
     }
   };
 
@@ -93,7 +163,7 @@ const ReplyLetter = () => {
     ));
   };
 
-  if (!originalLetter) {
+  if (!originalLetter || !friend) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
         <div className="text-center">
@@ -116,11 +186,19 @@ const ReplyLetter = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/inbox')}
+              onClick={() => {
+                // If this is a reply to a letter from inbox (unknown sender), go back to inbox
+                if (friend?.id?.startsWith('inbox-')) {
+                  navigate('/inbox');
+                } else {
+                  // Otherwise, go back to friend conversation
+                  navigate('/friend-conversation', { state: { friend } });
+                }
+              }}
               className="flex items-center gap-2 text-foreground/80 hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Inbox
+              {friend?.id?.startsWith('inbox-') ? 'Back to Inbox' : 'Back to Conversation'}
             </Button>
             <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses}`}>
               Reply to Letter
@@ -150,12 +228,12 @@ const ReplyLetter = () => {
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-foreground/60" />
-                        <span className={`text-sm ${accentClasses}`}>From {originalLetter.senderCountry}</span>
+                        <span className={`text-sm ${accentClasses}`}>From {friend.name} ({friend.country})</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-foreground/60" />
                         <span className={`text-xs ${bodyClasses} text-foreground/80`}>
-                          Journey: {originalLetter.deliveryTime}
+                          Sent: {originalLetter.dateSent ? new Date(originalLetter.dateSent).toLocaleDateString() : 'Recently'}
                         </span>
                       </div>
                     </div>
@@ -167,7 +245,7 @@ const ReplyLetter = () => {
 
                     {/* Interests */}
                     <div className="flex flex-wrap gap-2">
-                      {originalLetter.senderInterests.map((interest) => (
+                      {friend.interests.map((interest) => (
                         <Badge key={interest} variant="secondary" className="text-xs">
                           {interest}
                         </Badge>
@@ -184,7 +262,7 @@ const ReplyLetter = () => {
                     {/* Letter Footer */}
                     <div className="border-t border-primary/20 pt-3">
                       <div className="flex items-center justify-between text-xs text-foreground/80">
-                        <span>Received {originalLetter.receivedAt}</span>
+                        <span>From {friend.name} in {friend.country}</span>
                         <div className="flex items-center gap-1">
                           <Heart className="h-3 w-3" />
                           <span>Reply with care</span>
@@ -259,7 +337,14 @@ const ReplyLetter = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate('/inbox')}
+                    onClick={() => {
+                      // Navigate to appropriate page when canceling
+                      if (friend?.id?.startsWith('inbox-')) {
+                        navigate('/inbox');
+                      } else {
+                        navigate('/friend-conversation', { state: { friend } });
+                      }
+                    }}
                     className="border-primary/20 hover:bg-primary/10 font-inter"
                   >
                     Cancel
@@ -281,6 +366,15 @@ const ReplyLetter = () => {
                         Send Reply
                       </>
                     )}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSaveAsDraft}
+                    disabled={!replyContent.trim() || isSending}
+                    variant="outline"
+                    className="border-primary/20 hover:bg-primary/10 font-inter flex items-center gap-2"
+                  >
+                    Save as Draft
                   </Button>
                 </div>
               </form>

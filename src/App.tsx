@@ -9,10 +9,12 @@ import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import WriteLetter from "./pages/WriteLetter";
+import WriteLetterToFriend from "./pages/WriteLetterToFriend";
 import Inbox from "./pages/Inbox";
 import ReplyLetter from "./pages/ReplyLetter";
 import Dashboard from "./pages/Dashboard";
 import Friends from "./pages/Friends";
+import FriendConversation from "./pages/FriendConversation";
 import Drafts from "./pages/Drafts";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -43,6 +45,11 @@ const App = () => (
               <WriteLetter />
             </ProtectedRoute>
           } />
+          <Route path="/write-letter-to-friend" element={
+            <ProtectedRoute requireProfileCompletion={true}>
+              <WriteLetterToFriend />
+            </ProtectedRoute>
+          } />
           <Route path="/inbox" element={
             <ProtectedRoute requireProfileCompletion={true}>
               <Inbox />
@@ -56,6 +63,11 @@ const App = () => (
           <Route path="/friends" element={
             <ProtectedRoute requireProfileCompletion={true}>
               <Friends />
+            </ProtectedRoute>
+          } />
+          <Route path="/friend-conversation" element={
+            <ProtectedRoute requireProfileCompletion={true}>
+              <FriendConversation />
             </ProtectedRoute>
           } />
           <Route path="/drafts" element={

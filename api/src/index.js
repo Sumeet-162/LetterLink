@@ -4,6 +4,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import letterRoutes from './routes/letterRoutes.js';
+import friendRoutes from './routes/friendRoutes.js';
+import draftRoutes from './routes/draftRoutes.js';
+import { initScheduledTasks } from './services/scheduledTasks.js';
+import letterCycleService from './services/letterCycleService.js';
 
 dotenv.config();
 
@@ -11,7 +16,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:8081', // Development frontend
+  origin: ['http://localhost:3000', 'http://localhost:8081'], // Development frontend
   credentials: true
 }));
 app.use(express.json());
@@ -28,6 +33,9 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/letters', letterRoutes);
+app.use('/api/friends', friendRoutes);
+app.use('/api/drafts', draftRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -44,8 +52,16 @@ mongoose.connect(MONGODB_URI)
     console.log('Successfully connected to MongoDB');
     console.log('Database name:', mongoose.connection.db.databaseName);
     console.log('Available collections:', mongoose.connection.db.listCollections());
+    
+    // Initialize scheduled tasks
+    initScheduledTasks();
+    
+    // Start letter cycle service
+    letterCycleService.start();
+    
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log('Letter cycling system active ⏰');
     });
   })
   .catch((error) => {

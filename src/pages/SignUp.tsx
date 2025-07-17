@@ -94,11 +94,12 @@ const SignUp = () => {
                 <Input
                   type="text"
                   name="username"
-                  placeholder="Username"
+                  placeholder="Username (minimum 3 characters)"
                   value={formData.username}
                   onChange={handleInputChange}
                   className="pl-10 py-6 bg-white/50 border-2 border-primary/20 focus:border-primary transition-colors"
                   required
+                  minLength={3}
                 />
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
               </div>
@@ -118,11 +119,12 @@ const SignUp = () => {
                 <Input
                   type="password"
                   name="password"
-                  placeholder="Password"
+                  placeholder="Password (minimum 8 characters)"
                   value={formData.password}
                   onChange={handleInputChange}
                   className="pl-10 py-6 bg-white/50 border-2 border-primary/20 focus:border-primary transition-colors"
                   required
+                  minLength={8}
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
               </div>
@@ -138,6 +140,12 @@ const SignUp = () => {
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
               </div>
+            </div>
+
+            <div className="text-xs text-gray-600 space-y-1">
+              <p>• Username must be at least 3 characters long</p>
+              <p>• Password must be at least 8 characters long</p>
+              <p>• Valid email address required</p>
             </div>
 
             <div className="space-y-4">
