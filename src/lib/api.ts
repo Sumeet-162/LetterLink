@@ -17,6 +17,8 @@ export const API_CONFIG = {
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_CONFIG.baseURL}${endpoint}`;
   
+  console.log('Making API call to:', url); // Debug log
+  
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
@@ -31,18 +33,29 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     };
   }
 
-  const response = await fetch(url, {
-    ...defaultOptions,
-    ...options,
-    headers: {
-      ...defaultOptions.headers,
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers,
+      },
+    });
 
-  if (!response.ok) {
-    throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+    console.log('API response status:', response.status); // Debug log
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `API call failed: ${response.status} ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('API call error:', error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Cannot connect to server. Please check your internet connection.');
+    }
+    throw error;
   }
-
-  return response.json();
 };

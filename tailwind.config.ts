@@ -80,7 +80,8 @@ export default {
 			fontFamily: {
 				'heading': 'var(--font-heading)',
 				'body': 'var(--font-body)',
-				alata: ['Alata', 'sans-serif'],
+				inter: ['Inter', 'sans-serif'],
+				spectral: ['Spectral', 'serif'],
 			},
 			transitionTimingFunction: {
 				'smooth': 'var(--transition-smooth)',

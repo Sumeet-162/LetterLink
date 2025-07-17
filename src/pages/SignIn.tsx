@@ -19,6 +19,10 @@ const SignIn = () => {
     setIsLoading(true);
     setError("");
 
+    // Debug: Test API connectivity
+    console.log('API Base URL:', API_CONFIG.baseURL);
+    console.log('Login endpoint:', API_CONFIG.endpoints.auth.login);
+
     try {
       const data = await apiCall(API_CONFIG.endpoints.auth.login, {
         method: 'POST',

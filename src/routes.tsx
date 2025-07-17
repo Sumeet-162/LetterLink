@@ -6,6 +6,7 @@ import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
 import WriteLetter from "@/pages/WriteLetter";
 import Inbox from "@/pages/Inbox";
+import ReplyLetter from "@/pages/ReplyLetter";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
   {
     path: "/inbox",
     element: <Inbox />,
+  },
+  {
+    path: "/reply",
+    element: <ReplyLetter />,
   },
   {
     path: "*",

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +11,10 @@ import "@/styles/fonts.css";
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  // Font combinations matching Landing page
-  const headingClasses = "font-alata font-semibold tracking-tight text-foreground";
+  // Font combinations with Inter replacing Alata
+  const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
   const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
-  const accentClasses = "font-alata font-medium tracking-wide text-foreground/80";
+  const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
   const recentActivity = [
     {
@@ -101,7 +102,7 @@ const Dashboard = () => {
   };
 
   // Additional dashboard data
-  const writingStreak = 7; // consecutive days
+  const [writingStreak, setWritingStreak] = useState(7); // consecutive days - make it dynamic
   const trendingTopics = [
     { topic: "Travel Adventures", count: 234 },
     { topic: "Local Food Culture", count: 189 },
@@ -151,9 +152,12 @@ const Dashboard = () => {
         <div className="space-y-8">
           {/* Recent Activity Header */}
           <div className="text-left bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-letter border-none">
-            <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses} mb-4`}>
-              Recent Activity
-            </h2>
+            <div className="flex items-center gap-4 mb-4">
+              <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses}`}>
+                Recent Activity 
+              </h2>
+              <img className="h-20 w-20" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-v7to0FQpWGVK5703UVQOl7yFQm8qU7.png" alt="" />
+            </div>
             <p className={`text-lg text-foreground/80 ${bodyClasses} mb-6`}>
               Your latest letter interactions and conversations
             </p>
@@ -162,9 +166,7 @@ const Dashboard = () => {
             <div className="border-t border-primary/20 pt-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-primary/10">
-                    <Globe className="h-4 w-4 text-primary" />
-                  </div>
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/image-UbsvWWn2C9JrFY23BSpGoAekVwkvPX.png" alt="" />
                   <div>
                     <p className={`text-sm font-medium ${headingClasses}`}>
                       {userLocationData.greeting}!
@@ -177,9 +179,7 @@ const Dashboard = () => {
                 
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-full bg-accent/10">
-                      <MessageSquare className="h-3 w-3 text-accent" />
-                    </div>
+                    <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/061d58bb481804f2d9302ed590785f124fd5d6fb/icons/image-ij7GEZhfmzLNlLgDJVhkST8FIm5rJV.png" alt="" />
                     <div>
                       <p className={`text-xs font-medium text-foreground`}>
                         {userLocationData.date}
@@ -188,9 +188,7 @@ const Dashboard = () => {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-full bg-primary/10">
-                      <Heart className="h-3 w-3 text-primary" />
-                    </div>
+                    <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-qU6fpfrjnVtAmEOWtxxzIhqeyb7Tk3.png" alt="" />
                     <div>
                       <p className={`text-xs font-medium text-foreground`}>
                         {userLocationData.weather}
@@ -254,7 +252,7 @@ const Dashboard = () => {
                           
                           <div className="mt-auto space-y-2">
                             <div className="flex items-center gap-2">
-                              <Globe className="h-4 w-4 text-primary" />
+                              <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="" />
                               <span className={`text-sm ${accentClasses}`}>
                                 {activity.type === "received" ? "From" : "To"} {activity.username}
                               </span>
@@ -285,9 +283,7 @@ const Dashboard = () => {
             {/* Incoming Letters Status */}
             <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Mail className="h-5 w-5 text-primary" />
-                </div>
+                <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-WYuC7gUQSKvGrmWIMI6NB1Ec64dbEv%20(1).png" alt="" />
                 <div>
                   <p className={`text-sm font-medium ${headingClasses}`}>
                     Incoming Letters
@@ -305,9 +301,7 @@ const Dashboard = () => {
             {/* Friend Requests Status */}
             <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-accent/10">
-                  <Users className="h-5 w-5 text-accent" />
-                </div>
+                <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-qT0qCttwF0fSi4qeWZj6vo2Za76keg.png" alt="" />
                 <div>
                   <p className={`text-sm font-medium ${headingClasses}`}>
                     Friend Requests
@@ -330,9 +324,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/write')}>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-primary/20">
-                    <Plus className="h-6 w-6 text-primary" />
-                  </div>
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-ko4lGcyaDCpjH9giHyNhCVEtwdI1If%20(1).png" alt="" />
                   <div>
                     <h3 className={`text-lg font-semibold ${headingClasses} mb-1`}>
                       Compose New Letter
@@ -350,9 +342,7 @@ const Dashboard = () => {
                   onClick={() => navigate('/friends')}>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-accent/20">
-                    <Search className="h-6 w-6 text-accent" />
-                  </div>
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-52p9Ub8JEM1ahgmDoRazWouxX7h1DZ.png" alt="" />
                   <div>
                     <h3 className={`text-lg font-semibold ${headingClasses} mb-1`}>
                       Find New Friends
@@ -370,9 +360,7 @@ const Dashboard = () => {
           <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-orange-100">
-                  <Flame className="h-6 w-6 text-orange-500" />
-                </div>
+                <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NddQdftBhn6rEWlENfoUc4kpma0Ixv.png" alt="" />
                 <div className="flex-1">
                   <h3 className={`text-lg font-semibold ${headingClasses} mb-1`}>
                     Letter Writing Streak
@@ -399,7 +387,7 @@ const Dashboard = () => {
             <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-viLPTsEn03czmewucv5CSZIDGQ1130.png" alt="" />
                   Trending Topics
                 </CardTitle>
               </CardHeader>
@@ -421,7 +409,7 @@ const Dashboard = () => {
             <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
-                  <Star className="h-5 w-5 text-accent" />
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-OhBdiUi1Ac3hO893KYRkNNtW2OQSs6.png" alt="" />
                   Featured Writers
                 </CardTitle>
               </CardHeader>
@@ -451,7 +439,7 @@ const Dashboard = () => {
             <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
-                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-BVRbbADSVEBISzh8kjQOWr3OKiC7HH.png" alt="" />
                   Letter of the Day
                 </CardTitle>
               </CardHeader>
@@ -478,7 +466,7 @@ const Dashboard = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      className="text-xs border-primary/20 hover:bg-primary/10 font-alata"
+                      className="text-xs border-primary/20 hover:bg-primary/10 font-inter"
                       onClick={() => navigate('/inbox')}
                     >
                       Read Full Letter
@@ -490,34 +478,32 @@ const Dashboard = () => {
           </div>
 
           {/* Writing Inspiration */}
-          <div className="mt-12">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-letter border-none p-8">
             <div className="text-center mb-8">
-              <h2 className={`text-2xl lg:text-3xl text-foreground ${headingClasses} mb-4`}>
+              <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses} mb-4`}>
                 Writing Inspiration
               </h2>
-              <p className={`text-lg max-w-2xl mx-auto ${bodyClasses}`}>
-                Daily prompts to spark your creativity and connect with the world
+              <p className={`text-xl max-w-3xl mx-auto ${bodyClasses} leading-relaxed`}>
+                Daily prompts to spark your creativity and connect with the world through meaningful letters
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-accent/10">
-                      <MessageSquare className="h-5 w-5 text-accent" />
-                    </div>
-                    <div>
-                      <h4 className={`font-semibold text-lg ${headingClasses} mb-3`}>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="shadow-letter border-none bg-gradient-to-br from-accent/5 to-accent/10 backdrop-blur-sm hover:shadow-vintage transition-all duration-300 hover:scale-[1.02]">
+                <CardContent className="p-8">
+                  <div className="flex items-start gap-4">
+                    <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-r3Nfm6tvS4gvHD2LdJp0c3IIp9u9zF.png" alt="" />
+                    <div className="flex-1">
+                      <h4 className={`font-semibold text-xl ${headingClasses} mb-4 text-accent`}>
                         Today's Prompt
                       </h4>
-                      <p className={`text-sm ${bodyClasses} mb-4`}>
+                      <p className={`text-base ${bodyClasses} mb-6 leading-relaxed`}>
                         "Describe a tradition from your culture that brings your community together. What makes it special to you?"
                       </p>
                       <Button 
                         variant="outline" 
-                        size="sm"
-                        className="border-accent/20 hover:bg-accent/10 font-alata"
+                        size="default"
+                        className="border-accent/30 hover:bg-accent/15 font-inter text-accent hover:text-accent font-medium"
                         onClick={() => navigate('/write')}
                       >
                         <PenTool className="h-4 w-4 mr-2" />
@@ -528,23 +514,21 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
               
-              <Card className="shadow-letter border-none bg-white/90 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <Globe className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className={`font-semibold text-lg ${headingClasses} mb-3`}>
+              <Card className="shadow-letter border-none bg-gradient-to-br from-primary/5 to-primary/10 backdrop-blur-sm hover:shadow-vintage transition-all duration-300 hover:scale-[1.02]">
+                <CardContent className="p-8">
+                  <div className="flex items-start gap-4">
+                    <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-fxZYuvz3UXzipbTCxhkXz8yazNpTMI.png" alt="" />
+                    <div className="flex-1">
+                      <h4 className={`font-semibold text-xl ${headingClasses} mb-4 text-primary`}>
                         Cultural Exchange
                       </h4>
-                      <p className={`text-sm ${bodyClasses} mb-4`}>
+                      <p className={`text-base ${bodyClasses} mb-6 leading-relaxed`}>
                         Share something unique about your local area that visitors might not know about.
                       </p>
                       <Button 
                         variant="outline" 
-                        size="sm"
-                        className="border-primary/20 hover:bg-primary/10 font-alata"
+                        size="default"
+                        className="border-primary/30 hover:bg-primary/15 font-inter text-primary hover:text-primary font-medium"
                         onClick={() => navigate('/write')}
                       >
                         <PenTool className="h-4 w-4 mr-2" />

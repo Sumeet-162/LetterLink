@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Profile from "./pages/Profile";
 import WriteLetter from "./pages/WriteLetter";
 import Inbox from "./pages/Inbox";
+import ReplyLetter from "./pages/ReplyLetter";
 import Dashboard from "./pages/Dashboard";
 import Friends from "./pages/Friends";
 import Drafts from "./pages/Drafts";
@@ -45,6 +46,11 @@ const App = () => (
           <Route path="/inbox" element={
             <ProtectedRoute requireProfileCompletion={true}>
               <Inbox />
+            </ProtectedRoute>
+          } />
+          <Route path="/reply" element={
+            <ProtectedRoute requireProfileCompletion={true}>
+              <ReplyLetter />
             </ProtectedRoute>
           } />
           <Route path="/friends" element={

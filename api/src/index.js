@@ -11,13 +11,19 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [
-    'http://localhost:8081', // Development
-    'https://your-frontend-domain.vercel.app' // Replace with your actual frontend domain
-  ],
+  origin: 'http://localhost:8081', // Development frontend
   credentials: true
 }));
 app.use(express.json());
+
+// Root route for testing
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'LetterLink API is running!',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
