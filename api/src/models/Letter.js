@@ -22,13 +22,29 @@ const letterSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['sent', 'delivered', 'received', 'read', 'archived'],
+    enum: ['sent', 'delivered', 'received', 'read', 'archived', 'pending_response', 'accepted', 'rejected'],
     default: 'sent'
   },
   type: {
     type: String,
-    enum: ['letter', 'reply', 'delivery'],
+    enum: ['letter', 'reply', 'delivery', 'friend_letter'],
     default: 'letter'
+  },
+  // For friend letters - track if this is the first letter between users
+  isFirstLetter: {
+    type: Boolean,
+    default: false
+  },
+  // Response to friend letter
+  friendRequestResponse: {
+    type: String,
+    enum: ['pending', 'accepted', 'rejected'],
+    default: undefined,
+    required: false
+  },
+  respondedAt: {
+    type: Date,
+    default: null
   },
   originalLetter: {
     type: mongoose.Schema.Types.ObjectId,
@@ -97,14 +113,39 @@ letterSchema.pre('save', function(next) {
 
 // Method to check if letter can be replied to
 letterSchema.methods.canReply = function(userId) {
-  return this.recipient.toString() === userId.toString() && 
+  // Handle both populated objects and ObjectIds
+  const recipientId = this.recipient._id ? this.recipient._id.toString() : this.recipient.toString();
+  return recipientId === userId.toString() && 
          this.status === 'read' && 
          !this.isArchived;
 };
 
+// Method to check if letter is available to read (timer expired)
+letterSchema.methods.canRead = function() {
+  if (this.status === 'sent') return false;
+  if (this.scheduledDelivery && new Date() < this.scheduledDelivery) {
+    return false; // Still in transit
+  }
+  return this.status === 'delivered' || this.status === 'received';
+};
+
+// Method to check if letter is in transit
+letterSchema.methods.isInTransit = function() {
+  return this.status === 'delivered' && 
+         this.scheduledDelivery && 
+         new Date() < this.scheduledDelivery;
+};
+
+// Method to get remaining delivery time in milliseconds
+letterSchema.methods.getRemainingDeliveryTime = function() {
+  if (!this.scheduledDelivery) return 0;
+  const remaining = this.scheduledDelivery.getTime() - Date.now();
+  return Math.max(0, remaining);
+};
+
 // Method to mark as read
 letterSchema.methods.markAsRead = function() {
-  if (this.status === 'delivered' || this.status === 'received') {
+  if (this.canRead()) {
     this.status = 'read';
     this.readAt = new Date();
   }

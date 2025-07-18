@@ -1,6 +1,8 @@
 import Draft from '../models/Draft.js';
 import Letter from '../models/Letter.js';
 import User from '../models/User.js';
+import Friend from '../models/Friend.js';
+import { calculateDeliveryDelay } from '../utils/deliveryCalculator.js';
 
 // Get user's drafts
 export const getDrafts = async (req, res) => {
@@ -214,6 +216,106 @@ export const completeDraft = async (req, res) => {
   } catch (error) {
     console.error('Error completing draft:', error);
     res.status(500).json({ message: 'Error completing draft' });
+  }
+};
+
+// Send a draft as a letter
+export const sendDraft = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    const draft = await Draft.findById(id)
+      .populate('recipient', 'username name country timezone');
+
+    if (!draft) {
+      return res.status(404).json({ message: 'Draft not found' });
+    }
+
+    // Check if user owns this draft
+    if (draft.author.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized to send this draft' });
+    }
+
+    // Check if draft is already completed
+    if (draft.isCompleted) {
+      return res.status(400).json({ message: 'Draft is already completed' });
+    }
+
+    // Get sender data
+    const sender = await User.findById(userId);
+    if (!sender) {
+      return res.status(404).json({ message: 'Sender not found' });
+    }
+
+    const recipient = draft.recipient;
+
+    // Check if they are already friends
+    let friendship = await Friend.findFriendship(userId, recipient._id);
+    const isFirstLetter = !friendship;
+
+    // Calculate delivery delay if not specified
+    let calculatedDeliveryDelay = draft.deliveryDelay || 0;
+    
+    if (calculatedDeliveryDelay === 0) {
+      // Auto-calculate based on countries and user preferences
+      const userPreference = sender.letterPreferences?.deliveryDelay || null;
+      calculatedDeliveryDelay = calculateDeliveryDelay(
+        sender.country, 
+        recipient.country, 
+        userPreference
+      );
+    }
+
+    console.log('Draft to letter conversion:', {
+      draftId: id,
+      senderCountry: sender.country,
+      recipientCountry: recipient.country,
+      calculatedDelay: calculatedDeliveryDelay,
+      isFirstLetter: isFirstLetter
+    });
+
+    // Prepare letter data from draft
+    const letterData = {
+      sender: userId,
+      recipient: recipient._id,
+      subject: draft.subject,
+      content: draft.content,
+      deliveryDelay: calculatedDeliveryDelay,
+      status: 'sent', // Starts as sent, will become 'delivered' when timer expires
+      type: isFirstLetter ? 'friend_letter' : (draft.type === 'reply' ? 'reply' : 'delivery'),
+      isFirstLetter: isFirstLetter,
+      replyTo: draft.replyTo || null
+    };
+
+    // Only set friendRequestResponse for friend letters
+    if (isFirstLetter) {
+      letterData.friendRequestResponse = 'pending';
+    }
+
+    // Create the letter
+    const letter = await Letter.create(letterData);
+
+    // Only create/update friendship if they're already friends (subsequent letters)
+    if (friendship) {
+      // Update existing friendship activity
+      await friendship.updateActivity('sent', letter._id);
+      friendship.letterCount += 1;
+      await friendship.save();
+    }
+    // For first letters, friendship will be created only after acceptance
+
+    // Mark draft as completed
+    await draft.markCompleted();
+
+    const populatedLetter = await Letter.findById(letter._id)
+      .populate('sender', 'username name profilePicture')
+      .populate('recipient', 'username name profilePicture');
+
+    res.status(201).json(populatedLetter);
+  } catch (error) {
+    console.error('Error sending draft:', error);
+    res.status(500).json({ message: 'Error sending draft' });
   }
 };
 

@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Users, Mail, Heart, Search, Globe, MessageSquare, UserPlus, CheckCircle, Clock, Send, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, Mail, Heart, Search, Globe, MessageSquare, UserPlus, CheckCircle, Clock, Send, Loader2, Package, Timer, Truck, X } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { friendsAPI, api } from "@/services/api";
 import "@/styles/fonts.css";
@@ -35,6 +36,9 @@ interface SearchResult {
   profilePicture?: string;
   bio?: string;
   interests: string[];
+  languages?: string[];
+  writingStyle?: string;
+  preferredLetterStyle?: string;
   lastSeen?: string;
   isFriend: boolean;
   letterCount: number;
@@ -48,13 +52,21 @@ const Friends = () => {
     received: any[];
     sent: any[];
   }>({ received: [], sent: [] });
+  const [pendingFriendLetters, setPendingFriendLetters] = useState<any[]>([]);
+  const [inTransitLetters, setInTransitLetters] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [requestsLoading, setRequestsLoading] = useState(true);
+  const [pendingLettersLoading, setPendingLettersLoading] = useState(true);
+  const [inTransitLoading, setInTransitLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [showInTransit, setShowInTransit] = useState(false);
+  const [selectedLetter, setSelectedLetter] = useState<any>(null);
+  const [showLetterDialog, setShowLetterDialog] = useState(false);
+  const [processingAcceptReject, setProcessingAcceptReject] = useState(false);
 
   // Load friends from API
   useEffect(() => {
@@ -94,6 +106,50 @@ const Friends = () => {
     };
 
     loadFriendRequests();
+  }, []);
+
+  // Load pending friend letters (delivered letters waiting for accept/reject)
+  useEffect(() => {
+    const loadPendingFriendLetters = async () => {
+      try {
+        setPendingLettersLoading(true);
+        const response = await api.getPendingFriendLetters();
+        setPendingFriendLetters(response || []);
+      } catch (err) {
+        console.error('Error loading pending friend letters:', err);
+        setPendingFriendLetters([]);
+      } finally {
+        setPendingLettersLoading(false);
+      }
+    };
+
+    loadPendingFriendLetters();
+    
+    // Set up polling to update pending friend letters every minute
+    const interval = setInterval(loadPendingFriendLetters, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load in-transit letters
+  useEffect(() => {
+    const loadInTransitLetters = async () => {
+      try {
+        setInTransitLoading(true);
+        const response = await api.getInTransitLetters();
+        setInTransitLetters(response.inTransitLetters || []);
+      } catch (err) {
+        console.error('Error loading in-transit letters:', err);
+        setInTransitLetters([]);
+      } finally {
+        setInTransitLoading(false);
+      }
+    };
+
+    loadInTransitLetters();
+    
+    // Set up polling to update in-transit letters every minute
+    const interval = setInterval(loadInTransitLetters, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // Search for users
@@ -138,14 +194,94 @@ const Friends = () => {
   };
 
   const handleWriteToUser = (user: SearchResult) => {
-    // Navigate to write letter to friend page
-    navigate(`/write-letter-to-friend?friendId=${user._id}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.name || user.username)}`);
+    // Navigate to write letter to friend page with detailed user information
+    const params = new URLSearchParams({
+      friendId: user._id,
+      username: user.username,
+      name: user.name || user.username,
+      country: user.country || '',
+      timezone: user.timezone || '',
+      bio: user.bio || '',
+      interests: user.interests.join(','),
+      languages: (user.languages || []).join(','),
+      writingStyle: user.writingStyle || '',
+      preferredLetterStyle: user.preferredLetterStyle || '',
+      letterCount: user.letterCount.toString(),
+      profilePicture: user.profilePicture || ''
+    });
+    
+    navigate(`/write-letter-to-friend?${params.toString()}`);
   };
 
   const clearSearch = () => {
     setSearchTerm("");
     setSearchResults([]);
     setShowSearchResults(false);
+  };
+
+  const handleReadLetter = (letter: any) => {
+    setSelectedLetter(letter);
+    setShowLetterDialog(true);
+  };
+
+  const handleAcceptLetter = async () => {
+    if (!selectedLetter) return;
+    
+    try {
+      setProcessingAcceptReject(true);
+      await api.acceptFriendLetter(selectedLetter._id);
+      
+      // Close dialog
+      setShowLetterDialog(false);
+      setSelectedLetter(null);
+      
+      // Reload data
+      const [friendsData, pendingData, inTransitData] = await Promise.all([
+        friendsAPI.getFriends(),
+        api.getPendingFriendLetters(),
+        api.getInTransitLetters()
+      ]);
+      
+      setFriends(friendsData);
+      setPendingFriendLetters(pendingData || []);
+      setInTransitLetters(inTransitData.inTransitLetters || []);
+      
+      console.log('Friend letter accepted successfully!');
+    } catch (error) {
+      console.error('Error accepting friend letter:', error);
+      setError('Failed to accept letter. Please try again.');
+    } finally {
+      setProcessingAcceptReject(false);
+    }
+  };
+
+  const handleRejectLetter = async () => {
+    if (!selectedLetter) return;
+    
+    try {
+      setProcessingAcceptReject(true);
+      await api.rejectFriendLetter(selectedLetter._id);
+      
+      // Close dialog
+      setShowLetterDialog(false);
+      setSelectedLetter(null);
+      
+      // Reload data
+      const [pendingData, inTransitData] = await Promise.all([
+        api.getPendingFriendLetters(),
+        api.getInTransitLetters()
+      ]);
+      
+      setPendingFriendLetters(pendingData || []);
+      setInTransitLetters(inTransitData.inTransitLetters || []);
+      
+      console.log('Friend letter rejected successfully!');
+    } catch (error) {
+      console.error('Error rejecting friend letter:', error);
+      setError('Failed to reject letter. Please try again.');
+    } finally {
+      setProcessingAcceptReject(false);
+    }
   };
 
   const handleAcceptRequest = async (requestId: string) => {
@@ -185,18 +321,81 @@ const Friends = () => {
     }
   };
 
+  const handleCheckReadyLetters = async () => {
+    try {
+      setInTransitLoading(true);
+      // Process any ready letters
+      await api.processReadyLetters();
+      
+      // Reload both in-transit letters and friend requests
+      const [inTransitResponse, requestsData] = await Promise.all([
+        api.getInTransitLetters(),
+        api.getFriendRequests()
+      ]);
+      
+      setInTransitLetters(inTransitResponse.inTransitLetters || []);
+      setFriendRequests(requestsData);
+      
+      console.log('Checked for ready letters and updated displays');
+    } catch (error) {
+      console.error('Error checking ready letters:', error);
+      setError('Failed to check for ready letters. Please try again.');
+    } finally {
+      setInTransitLoading(false);
+    }
+  };
+
+  const handleAcceptFriendLetter = async (letterId: string) => {
+    try {
+      setProcessingRequest(letterId);
+      await api.acceptFriendLetter(letterId);
+      
+      // Reload pending friend letters and friends
+      const [pendingLetters, friendsData] = await Promise.all([
+        api.getPendingFriendLetters(),
+        friendsAPI.getFriends()
+      ]);
+      
+      setPendingFriendLetters(pendingLetters || []);
+      setFriends(friendsData);
+      console.log('Friend letter accepted successfully!');
+    } catch (error) {
+      console.error('Error accepting friend letter:', error);
+      setError('Failed to accept friend letter. Please try again.');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const handleRejectFriendLetter = async (letterId: string) => {
+    try {
+      setProcessingRequest(letterId);
+      await api.rejectFriendLetter(letterId);
+      
+      // Reload pending friend letters
+      const pendingLetters = await api.getPendingFriendLetters();
+      setPendingFriendLetters(pendingLetters || []);
+      console.log('Friend letter rejected.');
+    } catch (error) {
+      console.error('Error rejecting friend letter:', error);
+      setError('Failed to reject friend letter. Please try again.');
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
   const getActivityStatusIcon = (status: string) => {
     switch (status) {
       case "sent":
-        return <Send className="h-4 w-4 text-blue-500" />;
+        return <Send className="h-4 w-4 text-primary" />;
       case "delivered":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-primary" />;
       case "received":
-        return <Mail className="h-4 w-4 text-purple-500" />;
+        return <Mail className="h-4 w-4 text-primary" />;
       case "replied":
-        return <MessageSquare className="h-4 w-4 text-orange-500" />;
+        return <MessageSquare className="h-4 w-4 text-primary" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-foreground/60" />;
     }
   };
 
@@ -212,21 +411,6 @@ const Friends = () => {
         return "Replied";
       default:
         return "No activity";
-    }
-  };
-
-  const getActivityStatusColor = (status: string) => {
-    switch (status) {
-      case "sent":
-        return "text-blue-600 bg-blue-50";
-      case "delivered":
-        return "text-green-600 bg-green-50";
-      case "received":
-        return "text-purple-600 bg-purple-50";
-      case "replied":
-        return "text-orange-600 bg-orange-50";
-      default:
-        return "text-gray-600 bg-gray-50";
     }
   };
 
@@ -248,6 +432,204 @@ const Friends = () => {
             Connect with your pen pals from around the world
           </p>
         </div>
+
+        {/* Incoming Letters Section - Shows both pending friend letters and in-transit letters */}
+        {(!pendingLettersLoading || !inTransitLoading) && (pendingFriendLetters.length > 0 || inTransitLetters.length > 0) && (
+          <div className="mb-8">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <img className="h-16 w-16"src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-JCUgGETkeCMSw0WvOF4uLUF7CA5Yqh.png" alt="" />
+                <h3 className={`text-xl font-semibold ${headingClasses}`}>
+                  Incoming Letters
+                </h3>
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                  {pendingFriendLetters.length + inTransitLetters.length}
+                </Badge>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Pending Friend Letters - Delivered letters waiting for accept/reject */}
+                {pendingFriendLetters.map((letter: any) => (
+                  <div 
+                    key={`friend-letter-${letter._id}`}
+                    className="bg-white/70 rounded-lg p-4 border border-primary/10"
+                  >
+                    <div className="flex items-center justify-between">
+                      {/* Letter Info */}
+                      <div className="flex items-center gap-4">
+                        <img 
+                          className="h-12 w-12" 
+                          src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" 
+                          alt="User" 
+                        />
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <h4 className={`text-lg font-semibold ${headingClasses}`}>
+                              From {letter.sender?.name || letter.sender?.username}
+                            </h4>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-primary/10 text-primary border-primary/20"
+                            >
+                              Friend Letter
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-foreground/70">
+                            <div className="flex items-center gap-1">
+                              <Globe className="h-4 w-4" />
+                              {letter.sender?.country || 'Unknown'}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-4 w-4" />
+                              {letter.subject}
+                            </div>
+                          </div>
+                          <p className={`text-sm ${bodyClasses} text-foreground/60 mt-2`}>
+                            📨 First letter from this user - Accept to become friends and read the letter
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-3">
+                        <Button
+                          onClick={() => handleAcceptFriendLetter(letter._id)}
+                          className="bg-primary hover:bg-primary/90 text-white font-inter"
+                          size="sm"
+                          disabled={processingRequest === letter._id}
+                        >
+                          {processingRequest === letter._id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                          )}
+                          Accept & Read
+                        </Button>
+                        <Button
+                          onClick={() => handleRejectFriendLetter(letter._id)}
+                          variant="outline"
+                          className="text-foreground/60 border-primary/20 hover:bg-primary/5 font-inter"
+                          size="sm"
+                          disabled={processingRequest === letter._id}
+                        >
+                          {processingRequest === letter._id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            "✕"
+                          )}
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* In-Transit Letters - Accepted but still traveling */}
+                {inTransitLetters.map((letter: any) => (
+                  <div 
+                    key={`letter-${letter._id}`}
+                    className="bg-white/70 rounded-lg p-4 border border-primary/10"
+                  >
+                    <div className="flex items-center justify-between">
+                      {/* Letter Info */}
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-full bg-primary/10">
+                          {letter.isReadyForDelivery ? (
+                            <Package className="h-6 w-6 text-primary" />
+                          ) : (
+                            <Truck className="h-6 w-6 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-3 mb-1">
+                            <h4 className={`text-lg font-semibold ${headingClasses}`}>
+                              From {letter.sender?.name || letter.sender?.username}
+                            </h4>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs bg-primary/10 text-primary border-primary/20"
+                            >
+                              {letter.isReadyForDelivery ? 'Delivered' : 'In Transit'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-foreground/70">
+                            <div className="flex items-center gap-1">
+                              <Globe className="h-4 w-4" />
+                              {letter.senderCountry} → {letter.recipientCountry}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              Sent {new Date(letter.sentAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <p className={`text-sm ${bodyClasses} text-foreground/60 mt-2`}>
+                            {letter.isReadyForDelivery ? 
+                              '📬 Letter has arrived! Will appear in your friends list.' :
+                              '📮 Letter is traveling to you...'
+                            }
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Delivery Status */}
+                      <div className="flex flex-col items-end gap-2">
+                        {letter.isReadyForDelivery ? (
+                          <button 
+                            onClick={() => handleReadLetter(letter)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-white transition-colors"
+                          >
+                            <Mail className="h-4 w-4" />
+                            <span className={`text-sm font-medium`}>
+                              Read
+                            </span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary">
+                            <Timer className="h-4 w-4" />
+                            <span className={`text-sm font-medium ${accentClasses}`}>
+                              {letter.remainingTime}
+                            </span>
+                          </div>
+                        )}
+                        <span className={`text-xs ${bodyClasses} text-foreground/60`}>
+                          {letter.estimatedDeliveryText}
+                        </span>
+                        {!letter.isReadyForDelivery && (
+                          <span className={`text-xs ${bodyClasses} text-foreground/50`}>
+                            Arrives: {new Date(letter.deliveryDate).toLocaleDateString()} at {new Date(letter.deliveryDate).toLocaleTimeString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state for incoming letters */}
+        {!pendingLettersLoading && !inTransitLoading && pendingFriendLetters.length === 0 && inTransitLetters.length === 0 && (
+          <div className="mb-8">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <img className="h-16 w-16" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-JCUgGETkeCMSw0WvOF4uLUF7CA5Yqh.png" alt="" />
+                <h3 className={`text-xl font-semibold ${headingClasses}`}>
+                  Incoming Letters
+                </h3>
+              </div>
+              <div className="text-center py-8">
+                <img className="h-16 w-16 mx-auto mb-4" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-lp9vjuXTCqeB9yhVXBoBmyqdy8e9jv%20(1).png" alt="No letters" />
+                <p className={`${bodyClasses} text-foreground/70 mb-2`}>
+                  No incoming letters at the moment
+                </p>
+                <p className={`text-sm ${bodyClasses} text-foreground/60`}>
+                  Check back later or send someone a letter to start a conversation!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -320,7 +702,7 @@ const Friends = () => {
 
                       {/* Right Side - Activity Status */}
                       <div className="flex flex-col items-end gap-2">
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getActivityStatusColor(friend.lastActivityType)}`}>
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                           {getActivityStatusIcon(friend.lastActivityType)}
                           <span className={`${accentClasses}`}>
                             {getActivityStatusText(friend.lastActivityType)}
@@ -440,7 +822,7 @@ const Friends = () => {
                       <div className="flex items-center gap-3">
                         <Button
                           onClick={() => handleAcceptRequest(request._id)}
-                          className="bg-green-500 hover:bg-green-600 text-white font-inter"
+                          className="bg-primary hover:bg-primary/90 text-white font-inter"
                           size="sm"
                           disabled={processingRequest === request._id}
                         >
@@ -454,7 +836,7 @@ const Friends = () => {
                         <Button
                           onClick={() => handleRejectRequest(request._id)}
                           variant="outline"
-                          className="text-red-500 border-red-200 hover:bg-red-50 font-inter"
+                          className="text-foreground/60 border-primary/20 hover:bg-primary/5 font-inter"
                           size="sm"
                           disabled={processingRequest === request._id}
                         >
@@ -507,7 +889,7 @@ const Friends = () => {
                 <h3 className={`text-xl font-semibold ${headingClasses}`}>
                   Sent Requests
                 </h3>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-600">
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
                   {friendRequests.sent.length}
                 </Badge>
               </div>
@@ -516,7 +898,7 @@ const Friends = () => {
                 {friendRequests.sent.map((request: any) => (
                   <div 
                     key={request._id}
-                    className="bg-blue-50/50 rounded-lg p-4 border border-blue-100"
+                    className="bg-white/70 rounded-lg p-4 border border-primary/10"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -542,7 +924,7 @@ const Friends = () => {
                       </div>
                       <Badge 
                         variant="secondary" 
-                        className="bg-yellow-100 text-yellow-700"
+                        className="bg-primary/10 text-primary"
                       >
                         <Clock className="h-3 w-3 mr-1" />
                         Pending
@@ -626,7 +1008,7 @@ const Friends = () => {
                                   {user.country || 'Unknown'}
                                 </div>
                                 {user.isFriend && (
-                                  <Badge className="bg-green-100 text-green-800 text-xs">
+                                  <Badge className="bg-primary/10 text-primary text-xs">
                                     Friend
                                   </Badge>
                                 )}
@@ -641,10 +1023,19 @@ const Friends = () => {
                                 </div>
                                 {user.interests.length > 0 && (
                                   <div className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3 text-primary" />
+                                    <Heart className="h-3 w-3 text-pink-500" />
                                     <span className={`${bodyClasses}`}>
                                       {user.interests.slice(0, 2).join(', ')}
                                       {user.interests.length > 2 && '...'}
+                                    </span>
+                                  </div>
+                                )}
+                                {user.languages && user.languages.length > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-primary text-xs">🌐</span>
+                                    <span className={`${bodyClasses} text-primary`}>
+                                      {user.languages.slice(0, 2).join(', ')}
+                                      {user.languages.length > 2 && '...'}
                                     </span>
                                   </div>
                                 )}
@@ -750,6 +1141,83 @@ const Friends = () => {
           </div>
         </div>
       </div>
+
+      {/* Letter Reading Dialog */}
+      <Dialog open={showLetterDialog} onOpenChange={setShowLetterDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className={`text-xl ${headingClasses}`}>
+                Letter from {selectedLetter?.sender?.name || selectedLetter?.sender?.username}
+              </DialogTitle>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAcceptLetter}
+                  disabled={processingAcceptReject}
+                  className="bg-primary hover:bg-primary/90 text-white"
+                >
+                  {processingAcceptReject ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Accept
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleRejectLetter}
+                  disabled={processingAcceptReject}
+                  variant="outline"
+                  className="border-primary/20 text-foreground/60 hover:bg-primary/5"
+                >
+                  {processingAcceptReject ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <X className="h-4 w-4 mr-1" />
+                      Reject
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          {selectedLetter && (
+            <div className="space-y-4 mt-4">
+              {/* Letter Header */}
+              <div className="border-b pb-4">
+                <h3 className={`text-lg font-semibold ${headingClasses} mb-2`}>
+                  {selectedLetter.subject}
+                </h3>
+                <div className="flex items-center gap-4 text-sm text-foreground/70">
+                  <div className="flex items-center gap-1">
+                    <Globe className="h-4 w-4" />
+                    {selectedLetter.senderCountry} → {selectedLetter.recipientCountry}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    Sent {new Date(selectedLetter.sentAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Letter Content */}
+              <div className={`${bodyClasses} whitespace-pre-wrap leading-relaxed`}>
+                {selectedLetter.content}
+              </div>
+              
+              {/* Footer */}
+              <div className="border-t pt-4 text-center">
+                <p className={`text-sm ${bodyClasses} text-foreground/60`}>
+                  💌 Accept this letter to become friends with {selectedLetter.sender?.name || selectedLetter.sender?.username}
+                </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

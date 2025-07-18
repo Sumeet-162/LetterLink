@@ -2,28 +2,49 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Mail, Calendar, Eye, Reply, Globe, User, Clock, CloudSun } from "lucide-react";
+import { ArrowLeft, Mail, Calendar, Eye, Reply, Globe, User, Clock, CloudSun, Loader2, Timer } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { api } from "@/services/api";
+import { getCurrentUserId } from "@/utils/auth";
+import { getLetterDeliveryStatus, formatRemainingTime, getDeliveryEmoji, getDeliveryColor } from "@/utils/deliveryTimer";
 import "@/styles/fonts.css";
 
 interface Letter {
-  id: string;
-  title: string;
+  _id: string;
+  subject: string;
   content: string;
-  sender: "user" | "friend";
-  dateSent: string;
-  isRead: boolean;
-  status: "delivered" | "in-transit" | "read";
-  hasBeenRepliedTo?: boolean;
+  sender: {
+    _id: string;
+    username: string;
+    name: string;
+    profilePicture?: string;
+  };
+  recipient: {
+    _id: string;
+    username: string;
+    name: string;
+    profilePicture?: string;
+  };
+  createdAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+  status: "sent" | "delivered" | "read";
+  type: "delivery" | "reply";
+  replyTo?: string;
+  deliveryDelay?: number;
+  scheduledDelivery?: string;
 }
 
 interface Friend {
-  id: string;
+  _id: string;
+  username: string;
   name: string;
   country: string;
-  interests: string[];
-  lettersExchanged: number;
-  lastActive: string;
+  timezone?: string;
+  interests?: string[];
+  letterCount: number;
+  lastActivity: string;
+  lastActivityType: "sent" | "delivered" | "received" | "replied";
 }
 
 const FriendConversation = () => {
@@ -32,62 +53,85 @@ const FriendConversation = () => {
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(null);
   const [showLetterModal, setShowLetterModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [letters, setLetters] = useState<Letter[]>([
-    {
-      id: "1",
-      title: "Greetings from Tokyo",
-      content: "Dear friend,\n\nI hope this letter finds you well. I wanted to share with you the beautiful cherry blossoms I witnessed in Tokyo this spring. The sakura season here is truly magical, and I couldn't help but think of you and our shared love for nature.\n\nThe streets were lined with pink petals dancing in the gentle breeze, and families gathered under the blooming trees for hanami picnics. There's something so peaceful about this tradition - taking time to appreciate the fleeting beauty of the blossoms.\n\nI've been reflecting on our conversations about mindfulness and being present in the moment. The cherry blossoms remind me that beauty is often temporary, which makes it all the more precious.\n\nI'd love to hear about the seasons in your part of the world. What natural wonders have caught your attention lately?\n\nWith warm regards,\nAkira",
-      sender: "friend",
-      dateSent: "2024-03-15",
-      isRead: true,
-      status: "read",
-      hasBeenRepliedTo: true
-    },
-    {
-      id: "2",
-      title: "Spring reflections",
-      content: "Dear Akira,\n\nThank you for your beautiful letter about the cherry blossoms! Your description transported me right to Tokyo. I could almost smell the spring air and feel the gentle breeze you wrote about.\n\nHere in my city, spring has arrived with a burst of color too. The local park where I often walk has been transformed into a canvas of tulips, daffodils, and flowering trees. I've been taking my morning walks there, trying to practice the mindfulness you often write about.\n\nYour words about the temporary nature of beauty really resonated with me. It's made me more aware of the small moments of wonder in my daily life - the way sunlight filters through leaves, the sound of birds in the morning, the smile of a stranger.\n\nI've been reading more about Japanese philosophy and culture since our correspondence began. The concept of mono no aware - the bittersweet awareness of the impermanence of all things - seems to capture exactly what you described about the cherry blossoms.\n\nThank you for inspiring me to see the world through new eyes.\n\nWith gratitude,\nYour friend",
-      sender: "user",
-      dateSent: "2024-03-22",
-      isRead: true,
-      status: "delivered"
-    },
-    {
-      id: "3",
-      title: "Photography adventures",
-      content: "Dear friend,\n\nI was so moved by your letter about spring in your city! It sounds like you've truly embraced the art of mindful observation. Your description of the morning light filtering through leaves painted such a vivid picture in my mind.\n\nI'm delighted that you've been exploring Japanese philosophy. Mono no aware is indeed a central concept in how we view beauty and life. It's wonderful to know that our letters have sparked this interest in you.\n\nI wanted to share some exciting news - I've been working on a photography project capturing the changing seasons in different neighborhoods of Tokyo. Each photograph tells a story of transformation and impermanence. I've been thinking of you as I frame each shot, wondering what stories the light and shadows would tell to someone seeing them for the first time.\n\nPerhaps in my next letter, I can share some of these photographs with you. I think you would appreciate the interplay of nature and urban life that defines much of Tokyo's character.\n\nI've also been curious about your interests in literature and architecture. Are there any buildings or spaces in your city that inspire you? I'd love to hear about the places that bring you joy.\n\nLooking forward to your next letter,\nAkira",
-      sender: "friend",
-      dateSent: "2024-04-03",
-      isRead: true,
-      status: "read",
-      hasBeenRepliedTo: true
-    },
-    {
-      id: "4",
-      title: "City architecture and hidden gems",
-      content: "Dear Akira,\n\nYour photography project sounds absolutely fascinating! I would love to see your photographs of Tokyo's changing seasons. The way you describe the interplay between nature and urban life makes me want to explore my own city with fresh eyes.\n\nSpeaking of architecture, there's a beautiful old library in the historic district of my city that has become my favorite refuge. Built in the 1920s, it has these magnificent arched windows that cast the most incredible patterns of light across the reading rooms throughout the day. I often find myself there not just for the books, but for the peaceful atmosphere and the way the light changes as the hours pass.\n\nThere's also a small bridge over the river that runs through the city center. It's not particularly famous or grand, but there's something about the way it connects two different neighborhoods - two different worlds, really - that I find deeply moving. I often pause there during my walks, watching the water flow beneath and people crossing back and forth.\n\nYour letters have taught me to notice these details that I might have overlooked before. Thank you for that gift of awareness.\n\nI'm curious about your neighborhood in Tokyo. What are the sounds, smells, and sights that define your daily experience?\n\nWith appreciation,\nYour friend",
-      sender: "user",
-      dateSent: "2024-04-12",
-      isRead: true,
-      status: "delivered"
-    },
-    {
-      id: "5",
-      title: "Seasonal transitions and daily rituals",
-      content: "Dear friend,\n\nYour descriptions of the library and the bridge filled me with such warmth! I can picture you in that historic library, surrounded by the dancing patterns of light. There's something so beautiful about finding sanctuary in unexpected places.\n\nYou asked about my neighborhood in Tokyo - it's a fascinating blend of old and new. In the morning, I'm awakened by the gentle chime of the temple bell just a few blocks away. The sound mingles with the distant hum of the city waking up. There's a small ramen shop on my corner where the elderly owner has been serving the same recipe for thirty years. The aroma of miso and ginger often drifts up to my window.\n\nWhat strikes me most is how the seasons transform even the most urban spaces. Right now, as we transition into summer, the hydrangeas are blooming in tiny gardens tucked between buildings. Children walk to school under umbrellas during the rainy season, and the sound of cicadas will soon fill the evening air.\n\nI've been thinking about impermanence again - how these daily rituals and seasonal changes remind us that life is always in motion, always transforming.\n\nI hope you're finding similar moments of beauty in your daily walks. What seasonal changes are you noticing in your part of the world?\n\nWith continuing friendship,\nAkira",
-      sender: "friend",
-      dateSent: "2024-04-25",
-      isRead: true,
-      status: "read",
-      hasBeenRepliedTo: false
+  const [letters, setLetters] = useState<Letter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get friend data from navigation state
+  const friend = location.state?.friend as Friend;
+
+  // Get current user ID from JWT token
+  const currentUserId = getCurrentUserId();
+
+  // Load conversation letters from API
+  useEffect(() => {
+    const loadConversation = async () => {
+      if (!friend?._id) return;
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Check if user is authenticated
+        if (!currentUserId) {
+          console.warn('No authenticated user found');
+          setError('Authentication required');
+          return;
+        }
+        
+        console.log('Current user ID:', currentUserId);
+        
+        // Load conversation
+        const conversationLetters = await api.getConversation(friend._id);
+        console.log('Loaded conversation letters:', conversationLetters);
+        setLetters(conversationLetters || []);
+      } catch (err) {
+        console.error('Error loading conversation:', err);
+        setError('Failed to load conversation. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadConversation();
+  }, [friend?._id]);
+
+  // Check if we need to refresh the conversation (e.g., after sending a reply)
+  useEffect(() => {
+    const shouldRefresh = location.state?.refreshConversation;
+    if (shouldRefresh && friend?._id) {
+      // Refresh the conversation to show the new reply
+      const refreshConversation = async () => {
+        try {
+          const conversationLetters = await api.getConversation(friend._id);
+          console.log('Conversation refreshed with new letters:', conversationLetters);
+          setLetters(conversationLetters || []);
+        } catch (err) {
+          console.error('Error refreshing conversation:', err);
+        }
+      };
+      
+      refreshConversation();
+      
+      // Clear the refresh flag to prevent repeated refreshes
+      navigate('/friend-conversation', { 
+        state: { 
+          friend,
+          message: location.state?.message 
+        },
+        replace: true 
+      });
     }
-  ]);
+  }, [location.state?.refreshConversation, friend?._id, navigate, location.state?.message]);
   
-  // Update time every minute
+  // Update time every minute and refresh delivery status
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000);
+      
+      // Force re-render to update delivery timers
+      setLetters(prevLetters => [...prevLetters]);
+    }, 30000); // Update every 30 seconds for delivery timers
     
     return () => clearInterval(timer);
   }, []);
@@ -129,35 +173,84 @@ const FriendConversation = () => {
     }).format(currentTime);
   };
 
+  // Helper function to check if current user is the sender
+  const isCurrentUserSender = (letter: Letter) => {
+    const letterSenderId = letter.sender._id;
+    const isSender = letterSenderId === currentUserId || letterSenderId.toString() === currentUserId || letterSenderId === currentUserId?.toString();
+    
+    console.log('isCurrentUserSender check:', {
+      letterId: letter._id,
+      letterSenderId: letterSenderId,
+      letterSenderName: letter.sender.name,
+      currentUserId: currentUserId,
+      letterSenderIdType: typeof letterSenderId,
+      currentUserIdType: typeof currentUserId,
+      strictEquals: letterSenderId === currentUserId,
+      stringEquals: letterSenderId.toString() === currentUserId,
+      bothStringEquals: letterSenderId.toString() === currentUserId?.toString(),
+      finalResult: isSender,
+      letterType: letter.type
+    });
+    return isSender;
+  };
+
   // Get the most recent letter from friend that hasn't been replied to
   const getLatestUnrepliedFriendLetter = () => {
-    const friendLetters = letters
-      .filter(letter => letter.sender === 'friend' && !letter.hasBeenRepliedTo)
-      .sort((a, b) => new Date(b.dateSent).getTime() - new Date(a.dateSent).getTime());
+    // Find letters that don't have replies
+    const unrepliedLetters = letters.filter(letter => {
+      if (isCurrentUserSender(letter)) return false; // Skip own letters
+      
+      // Check if this letter has been replied to by finding a reply to it
+      const hasReply = letters.some(replyLetter => 
+        replyLetter.replyTo === letter._id && isCurrentUserSender(replyLetter)
+      );
+      
+      return !hasReply;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
-    return friendLetters[0] || null;
+    return unrepliedLetters[0] || null;
   };
 
   // Check if a letter can be replied to
   const canReplyToLetter = (letter: Letter) => {
-    if (letter.sender === 'user') return false; // Can't reply to own letters
-    if (letter.hasBeenRepliedTo) return false; // Already replied to
+    if (isCurrentUserSender(letter)) return false; // Can't reply to own letters
+    
+    // Check if this letter has been replied to
+    const hasReply = letters.some(replyLetter => 
+      replyLetter.replyTo === letter._id && isCurrentUserSender(replyLetter)
+    );
+    
+    if (hasReply) return false; // Already replied to
     
     const latestUnrepliedLetter = getLatestUnrepliedFriendLetter();
-    return latestUnrepliedLetter && latestUnrepliedLetter.id === letter.id;
+    return latestUnrepliedLetter && latestUnrepliedLetter._id === letter._id;
   };
-
-  // Get friend data from navigation state
-  const friend = location.state?.friend as Friend;
 
   // Font combinations with Inter replacing Alata
   const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
   const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
   const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
-  const handleLetterClick = (letter: Letter) => {
+  const handleLetterClick = async (letter: Letter) => {
     setSelectedLetter(letter);
     setShowLetterModal(true);
+    
+    // Mark letter as read if it's not already read and user is the recipient
+    if (letter.status !== 'read' && !isCurrentUserSender(letter)) {
+      try {
+        console.log('Marking letter as read when viewing:', letter._id);
+        await api.markLetterAsRead(letter._id);
+        
+        // Update the letter status locally
+        setLetters(prevLetters => 
+          prevLetters.map(l => 
+            l._id === letter._id ? { ...l, status: 'read' as const } : l
+          )
+        );
+      } catch (error) {
+        console.error('Error marking letter as read:', error);
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -169,15 +262,24 @@ const FriendConversation = () => {
     navigate('/write', { state: { recipient: friend } });
   };
 
-  const handleReplyToLetter = (letter: Letter) => {
-    // Mark the letter as replied to
-    setLetters(prevLetters => 
-      prevLetters.map(l => 
-        l.id === letter.id ? { ...l, hasBeenRepliedTo: true } : l
-      )
-    );
-    
-    navigate('/reply', { state: { replyTo: letter, friend } });
+  const handleReplyToLetter = async (letter: Letter) => {
+    try {
+      // Mark letter as read first (required for replying)
+      if (letter.status !== 'read') {
+        console.log('Marking letter as read before replying:', letter._id);
+        await api.markLetterAsRead(letter._id);
+        
+        // Update the letter status locally
+        const updatedLetter = { ...letter, status: 'read' as const };
+        navigate('/reply', { state: { replyTo: updatedLetter, friend } });
+      } else {
+        navigate('/reply', { state: { replyTo: letter, friend } });
+      }
+    } catch (error) {
+      console.error('Error marking letter as read:', error);
+      // Still allow navigation even if marking as read fails
+      navigate('/reply', { state: { replyTo: letter, friend } });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -200,11 +302,47 @@ const FriendConversation = () => {
   if (!friend) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
+        <Navigation />
         <div className="text-center">
           <h2 className={`text-2xl ${headingClasses} mb-4`}>Friend not found</h2>
           <Button onClick={() => navigate('/friends')} className="bg-primary hover:bg-primary/90 text-white font-inter">
             Back to Friends
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16">
+        <Navigation />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className={`${bodyClasses} text-foreground/70`}>Loading conversation...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen pt-16">
+        <Navigation />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <h2 className={`text-xl ${headingClasses} mb-4 text-red-600`}>Error Loading Conversation</h2>
+              <p className={`${bodyClasses} text-foreground/70 mb-4`}>{error}</p>
+              <Button onClick={() => window.location.reload()} className="bg-primary hover:bg-primary/90 text-white font-inter">
+                Try Again
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -263,7 +401,7 @@ const FriendConversation = () => {
             </div>
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-foreground/60" />
-              <span className={`${bodyClasses}`}>{friend.lettersExchanged} letters exchanged</span>
+              <span className={`${bodyClasses}`}>{friend.letterCount || 0} letters exchanged</span>
             </div>
           </div>
         </div>
@@ -281,79 +419,112 @@ const FriendConversation = () => {
 
         {/* Letters List */}
         <div className="space-y-6">
-          {letters.map((letter) => (
-            <div
-              key={letter.id}
-              className={`bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6 cursor-pointer hover:shadow-xl transition-all duration-300 ${
-                letter.sender === 'user' ? 'ml-12' : 'mr-12'
-              }`}
-              onClick={() => handleLetterClick(letter)}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${letter.sender === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                    {letter.sender === 'user' ? (
-                      <User className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <img className="h-4 w-4" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Friend" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className={`text-lg font-semibold ${headingClasses}`}>
-                      {letter.title}
-                    </h3>
-                    <p className={`text-sm ${accentClasses}`}>
-                      {letter.sender === 'user' ? 'You' : friend.name} • {formatDate(letter.dateSent)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={letter.status === 'delivered' ? 'default' : 'secondary'} className="text-xs">
-                    {letter.status}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLetterClick(letter);
-                    }}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <p className={`${bodyClasses} line-clamp-3 mb-4`}>
-                {letter.content.split('\n')[0]}
-              </p>
-              
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${accentClasses}`}>
-                  Click to read full letter
-                </span>
-                {canReplyToLetter(letter) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReplyToLetter(letter);
-                    }}
-                    className="border-primary/20 hover:bg-primary/10"
-                  >
-                    <Reply className="h-4 w-4 mr-2" />
-                    Reply
-                  </Button>
-                )}
-                {letter.sender === 'friend' && letter.hasBeenRepliedTo && (
-                  <Badge variant="secondary" className="text-xs">
-                    Replied
-                  </Badge>
-                )}
-              </div>
+          {letters.length === 0 ? (
+            <div className="text-center py-12">
+              <Mail className="h-12 w-12 text-foreground/40 mx-auto mb-4" />
+              <h3 className={`text-lg ${headingClasses} text-foreground/70 mb-2`}>No letters yet</h3>
+              <p className={`${bodyClasses} text-foreground/60 mb-4`}>Start your conversation by writing a letter!</p>
+              <Button 
+                onClick={handleWriteLetter}
+                className="bg-primary hover:bg-primary/90 text-white font-inter"
+              >
+                Write First Letter
+              </Button>
             </div>
-          ))}
+          ) : (
+            letters.map((letter) => {
+              const deliveryStatus = getLetterDeliveryStatus(letter);
+              const canReadLetter = deliveryStatus.canRead || isCurrentUserSender(letter);
+              
+              return (
+              <div
+                key={letter._id}
+                className={`bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6 cursor-pointer hover:shadow-xl transition-all duration-300 ${
+                  isCurrentUserSender(letter) ? 'ml-12' : 'mr-12'
+                } ${!canReadLetter ? 'opacity-75' : ''}`}
+                onClick={() => canReadLetter && handleLetterClick(letter)}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${isCurrentUserSender(letter) ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      {isCurrentUserSender(letter) ? (
+                        <User className="h-4 w-4 text-blue-600" />
+                      ) : (
+                        <img className="h-4 w-4" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Friend" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className={`text-lg font-semibold ${headingClasses}`}>
+                        {letter.subject}
+                      </h3>
+                      <p className={`text-sm ${accentClasses}`}>
+                        {isCurrentUserSender(letter) ? 'You' : friend.name} • {formatDate(letter.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Delivery Status Badge */}
+                    {deliveryStatus.isInTransit && (
+                      <Badge variant="outline" className={`text-xs ${getDeliveryColor(deliveryStatus)} border-orange-200 bg-orange-50`}>
+                        <Timer className="h-3 w-3 mr-1" />
+                        {deliveryStatus.formattedTime}
+                      </Badge>
+                    )}
+                    
+                    <Badge variant={letter.status === 'delivered' ? 'default' : 'secondary'} className="text-xs">
+                      {getDeliveryEmoji(deliveryStatus)} {letter.status}
+                    </Badge>
+                    
+                    {letter.type === 'reply' && (
+                      <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">
+                        Reply
+                      </Badge>
+                    )}
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canReadLetter) {
+                          handleLetterClick(letter);
+                        }
+                      }}
+                      disabled={!canReadLetter}
+                      className={!canReadLetter ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className={`${bodyClasses} line-clamp-3 mb-4 ${!canReadLetter ? 'blur-sm' : ''}`}>
+                  {canReadLetter ? letter.content.split('\n')[0] : 'Letter is traveling... Please wait for delivery.'}
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm ${accentClasses}`}>
+                    {deliveryStatus.isInTransit ? `Arriving in ${deliveryStatus.formattedTime}` : 'Click to read full letter'}
+                  </span>
+                  {canReplyToLetter(letter) && canReadLetter && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReplyToLetter(letter);
+                      }}
+                      className="border-primary/20 hover:bg-primary/10"
+                    >
+                      <Reply className="h-4 w-4 mr-2" />
+                      Reply
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+            })
+          )}
         </div>
       </div>
 
@@ -364,8 +535,8 @@ const FriendConversation = () => {
             <div className="p-6 border-b border-primary/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${selectedLetter.sender === 'user' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                    {selectedLetter.sender === 'user' ? (
+                  <div className={`p-2 rounded-full ${isCurrentUserSender(selectedLetter) ? 'bg-blue-100' : 'bg-green-100'}`}>
+                    {isCurrentUserSender(selectedLetter) ? (
                       <User className="h-5 w-5 text-blue-600" />
                     ) : (
                       <img className="h-5 w-5" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Friend" />
@@ -373,10 +544,10 @@ const FriendConversation = () => {
                   </div>
                   <div>
                     <h3 className={`text-xl font-semibold ${headingClasses}`}>
-                      {selectedLetter.title}
+                      {selectedLetter.subject}
                     </h3>
                     <p className={`text-sm ${accentClasses}`}>
-                      {selectedLetter.sender === 'user' ? 'You' : friend.name} • {formatDate(selectedLetter.dateSent)}
+                      {isCurrentUserSender(selectedLetter) ? 'You' : friend.name} • {formatDate(selectedLetter.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -401,7 +572,7 @@ const FriendConversation = () => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-foreground/60" />
                 <span className={`text-sm ${bodyClasses}`}>
-                  Sent on {formatDate(selectedLetter.dateSent)}
+                  Sent on {formatDate(selectedLetter.createdAt)}
                 </span>
               </div>
               <div className="flex gap-3">
@@ -423,11 +594,6 @@ const FriendConversation = () => {
                     <Reply className="h-4 w-4 mr-2" />
                     Reply
                   </Button>
-                )}
-                {selectedLetter.sender === 'friend' && selectedLetter.hasBeenRepliedTo && (
-                  <Badge variant="secondary" className="text-xs">
-                    Already Replied
-                  </Badge>
                 )}
               </div>
             </div>

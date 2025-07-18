@@ -11,27 +11,26 @@ const friendRequestSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  subject: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 200
-  },
-  content: {
-    type: String,
-    required: true,
-    trim: true,
-    minlength: 50,
-    maxlength: 2000
+  letter: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Letter',
+    required: true
   },
   status: {
     type: String,
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending'
   },
+  isDelivered: {
+    type: Boolean,
+    default: false
+  },
   sentAt: {
     type: Date,
     default: Date.now
+  },
+  deliveredAt: {
+    type: Date
   },
   respondedAt: {
     type: Date

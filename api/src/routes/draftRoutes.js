@@ -6,6 +6,7 @@ import {
   updateDraft,
   deleteDraft,
   completeDraft,
+  sendDraft,
   getDraftStats,
   getReplyDraft
 } from '../controllers/draftController.js';
@@ -25,5 +26,6 @@ router.post('/', createDraft);
 router.put('/:id', updateDraft);
 router.delete('/:id', deleteDraft);
 router.patch('/:id/complete', completeDraft);
+router.patch('/:id/send', sendDraft);
 
 export default router;

@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PenTool, Send, Users, Globe, Clock, MapPin, User, Heart, BookOpen, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import LetterDialog from "@/components/LetterDialog";
 import { api } from "@/services/api";
 import "@/styles/fonts.css";
 
@@ -23,6 +24,10 @@ const WriteLetter = () => {
     title: "",
     content: ""
   });
+
+  // Dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedRecipient, setSelectedRecipient] = useState<any>(null);
 
   // Form state management
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -260,6 +265,20 @@ const WriteLetter = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleWriteToRecipient = (recipient: any) => {
+    setSelectedRecipient(recipient);
+    setIsDialogOpen(true);
+  };
+
+  const handleSendLetter = async (data: { subject: string; content: string }) => {
+    const response = await api.sendRandomMatchLetter({
+      subject: data.subject,
+      content: data.content,
+      interests: selectedInterests
+    });
+    return response;
   };
 
   return (
@@ -651,6 +670,13 @@ I hope this letter finds you well. I wanted to share..."
                           ))}
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleWriteToRecipient(recipient)}
+                        className="w-full mt-2 bg-primary hover:bg-primary/90 text-white"
+                      >
+                        Write Letter
+                      </Button>
                     </div>
                   ))}
                   <div className="text-center">
@@ -715,6 +741,18 @@ I hope this letter finds you well. I wanted to share..."
           </div>
         </div>
       </div>
+
+      {/* Letter Dialog */}
+      <LetterDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        onSend={handleSendLetter}
+        recipientName={selectedRecipient?.country || "Worldwide"}
+        type="letter"
+        title="Write Letter"
+        description="Send your thoughts to someone around the world"
+        maxContentLength={2000}
+      />
     </div>
   );
 };

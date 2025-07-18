@@ -9,8 +9,9 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { PenTool, Send, User, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { PenTool, Send, User, ArrowLeft, CheckCircle, AlertCircle, Loader2, Globe, Heart, Mail, Clock, Languages, BookOpen, Sparkles } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import LetterDialog from "@/components/LetterDialog";
 import { api } from "@/services/api";
 import "@/styles/fonts.css";
 
@@ -20,6 +21,18 @@ const WriteLetterToFriend = () => {
   const friendId = searchParams.get('friendId');
   const friendUsername = searchParams.get('username');
   const friendName = searchParams.get('name');
+  const friendCountry = searchParams.get('country');
+  const friendTimezone = searchParams.get('timezone');
+  const friendBio = searchParams.get('bio');
+  const friendInterests = searchParams.get('interests');
+  const friendLanguages = searchParams.get('languages');
+  const friendWritingStyle = searchParams.get('writingStyle');
+  const friendPreferredLetterStyle = searchParams.get('preferredLetterStyle');
+  const friendLetterCount = searchParams.get('letterCount');
+  const friendProfilePicture = searchParams.get('profilePicture');
+
+  // Dialog state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Letter content state
   const [letterData, setLetterData] = useState({
@@ -44,6 +57,10 @@ const WriteLetterToFriend = () => {
   const maxContentLength = 2000;
   const contentProgress = (letterData.content.length / maxContentLength) * 100;
 
+  // Parse interests and languages
+  const interestsArray = friendInterests ? friendInterests.split(',').filter(Boolean) : [];
+  const languagesArray = friendLanguages ? friendLanguages.split(',').filter(Boolean) : [];
+
   // Load friend data
   useEffect(() => {
     const loadFriendData = async () => {
@@ -54,11 +71,20 @@ const WriteLetterToFriend = () => {
       }
 
       try {
-        // You can get friend profile data here if needed
+        // Set comprehensive friend data
         setFriendData({
           id: friendId,
           username: friendUsername,
-          name: friendName
+          name: friendName,
+          country: friendCountry,
+          timezone: friendTimezone,
+          bio: friendBio,
+          interests: interestsArray,
+          languages: languagesArray,
+          writingStyle: friendWritingStyle,
+          preferredLetterStyle: friendPreferredLetterStyle,
+          letterCount: parseInt(friendLetterCount || '0'),
+          profilePicture: friendProfilePicture
         });
       } catch (error) {
         console.error("Failed to load friend data:", error);
@@ -69,69 +95,20 @@ const WriteLetterToFriend = () => {
     };
 
     loadFriendData();
-  }, [friendId, friendUsername, friendName]);
+  }, [friendId, friendUsername, friendName, friendCountry, friendTimezone, friendBio, friendInterests, friendLanguages, friendWritingStyle, friendPreferredLetterStyle, friendLetterCount, friendProfilePicture]);
 
-  const handleSubmit = async () => {
-    // Reset previous states
-    setSubmitError(null);
-    setSubmitSuccess(false);
-    
-    // Validate form
-    if (!letterData.subject.trim()) {
-      setSubmitError("Please enter a letter subject.");
-      return;
-    }
-    
-    if (!letterData.content.trim()) {
-      setSubmitError("Please write your letter content.");
-      return;
-    }
-    
-    if (letterData.content.length < 50) {
-      setSubmitError("Letter content should be at least 50 characters long.");
-      return;
-    }
-
-    if (!friendId) {
-      setSubmitError("Friend information missing. Please go back and try again.");
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Send friend request letter
-      const response = await api.sendFriendRequest({
-        recipientId: friendId,
-        subject: letterData.subject,
-        content: letterData.content
-      });
-      
-      console.log("Friend request sent successfully:", response);
-      setSubmitSuccess(true);
-      
-      // Show success message and redirect
-      setTimeout(() => {
-        navigate('/friends');
-      }, 2000);
-      
-    } catch (error) {
-      console.error("Failed to send friend request:", error);
-      setSubmitError(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to send friend request. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSubmit = async (data: { subject: string; content: string }) => {
+    const response = await api.sendLetter({
+      recipientId: friendId!,
+      subject: data.subject,
+      content: data.content,
+      deliveryDelay: 0 // Immediate delivery for first letters
+    });
+    return response;
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setLetterData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleWriteLetter = () => {
+    setIsDialogOpen(true);
   };
 
   if (loadingFriend) {
@@ -155,138 +132,268 @@ const WriteLetterToFriend = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="text-left bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-letter border-none mb-8">
           <Button
             variant="ghost"
             onClick={() => navigate('/friends')}
-            className="mb-4"
+            className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Friends
           </Button>
           
-          <div className="flex items-center gap-4 mb-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${friendData?.username}`} />
-              <AvatarFallback>
+          <div className="flex items-start gap-6">
+            {/* Avatar */}
+            <Avatar className="h-24 w-24 border-2 border-primary/20">
+              <AvatarImage 
+                src={friendData?.profilePicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friendData?.username}`} 
+              />
+              <AvatarFallback className="text-2xl">
                 {friendData?.name ? friendData.name.charAt(0).toUpperCase() : 'U'}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h1 className={`text-3xl ${headingClasses}`}>
-                Write Letter to {friendData?.name || friendData?.username}
-              </h1>
-              <p className={`text-lg text-gray-600 ${bodyClasses}`}>
-                Send a friend request with a personal letter
+            
+            {/* User Information */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className={`text-3xl ${headingClasses}`}>
+                  Write Letter to {friendData?.name || friendData?.username}
+                </h1>
+                {friendData?.country && (
+                  <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
+                    <Globe className="h-4 w-4 text-primary" />
+                    <span className={`text-sm text-primary ${accentClasses}`}>{friendData.country}</span>
+                  </div>
+                )}
+              </div>
+              
+              <p className={`text-lg text-foreground/80 mb-4 ${bodyClasses}`}>
+                Send a letter to connect and start a meaningful conversation
               </p>
+              
+              {/* User Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {/* Username and Timezone */}
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-sm bg-primary/10 text-primary">
+                    @{friendData?.username}
+                  </Badge>
+                  {friendData?.timezone && (
+                    <Badge variant="outline" className="text-sm border-primary/20 text-foreground/80">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {friendData.timezone}
+                    </Badge>
+                  )}
+                </div>
+                
+                {/* Letter Count */}
+                {friendData?.letterCount !== undefined && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className={`text-primary ${accentClasses}`}>
+                      {friendData.letterCount} letters exchanged
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Action Button */}
+              <Button
+                onClick={handleWriteLetter}
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white shadow-letter"
+              >
+                <PenTool className="h-5 w-5 mr-2" />
+                Compose Letter
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Success Message */}
-        {submitSuccess && (
-          <Alert className="mb-6 border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              Friend request sent successfully! You'll be redirected to the friends page.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Error Message */}
-        {submitError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Letter Composition Form */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className={`flex items-center gap-2 ${headingClasses}`}>
-              <PenTool className="h-5 w-5" />
-              Compose Your Letter
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Subject Field */}
-            <div className="space-y-2">
-              <Label htmlFor="subject" className={accentClasses}>
-                Letter Subject
-              </Label>
-              <Input
-                id="subject"
-                placeholder="Enter a meaningful subject for your letter..."
-                value={letterData.subject}
-                onChange={(e) => handleInputChange("subject", e.target.value)}
-                className={`${bodyClasses} text-base`}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Content Field */}
-            <div className="space-y-2">
-              <Label htmlFor="content" className={accentClasses}>
-                Letter Content
-              </Label>
-              <Textarea
-                id="content"
-                placeholder="Write your letter here... Share why you'd like to connect and what interests you about this person."
-                value={letterData.content}
-                onChange={(e) => handleInputChange("content", e.target.value)}
-                className={`${bodyClasses} text-base min-h-[300px] resize-none`}
-                maxLength={maxContentLength}
-                disabled={isSubmitting}
-              />
-              
-              {/* Character Counter */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-500">
-                  {letterData.content.length} / {maxContentLength} characters
-                </span>
-                <div className="w-24">
-                  <Progress value={contentProgress} className="h-2" />
+        {/* Enhanced Information Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Interests Card */}
+          {friendData?.interests && friendData.interests.length > 0 && (
+            <Card className="bg-white/90 backdrop-blur-sm border-primary/10 shadow-letter">
+              <CardHeader>
+                <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
+                  <Heart className="h-5 w-5 text-primary" />
+                  Interests & Hobbies
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {friendData.interests.map((interest, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="bg-primary/10 text-primary border-primary/20 px-3 py-1"
+                    >
+                      {interest}
+                    </Badge>
+                  ))}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+          )}
 
-            {/* Guidelines */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className={`font-medium text-blue-900 mb-2 ${accentClasses}`}>
-                Writing Tips for Friend Requests:
-              </h4>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Introduce yourself and mention what interests you share</li>
-                <li>• Be genuine and personal in your approach</li>
-                <li>• Ask questions to start a meaningful conversation</li>
-                <li>• Keep it respectful and friendly</li>
-                <li>• Minimum 50 characters required</li>
-              </ul>
-            </div>
+          {/* Languages Card */}
+          {friendData?.languages && friendData.languages.length > 0 && (
+            <Card className="bg-white/90 backdrop-blur-sm border-primary/10 shadow-letter">
+              <CardHeader>
+                <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
+                  <Languages className="h-5 w-5 text-primary" />
+                  Languages Spoken
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {friendData.languages.map((language, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="bg-primary/10 text-primary border-primary/20 px-3 py-1"
+                    >
+                      {language}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            {/* Send Button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || letterData.content.length < 50 || !letterData.subject.trim()}
-                className="px-8 py-3"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Send Friend Request
-                  </>
+          {/* Writing Style Card */}
+          {(friendData?.writingStyle || friendData?.preferredLetterStyle) && (
+            <Card className="bg-white/90 backdrop-blur-sm border-primary/10 shadow-letter">
+              <CardHeader>
+                <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Writing Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {friendData.writingStyle && (
+                  <div>
+                    <span className={`text-sm font-medium text-primary ${accentClasses}`}>Writing Style:</span>
+                    <p className={`text-sm ${bodyClasses} text-foreground/80 mt-1`}>
+                      {friendData.writingStyle}
+                    </p>
+                  </div>
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                {friendData.preferredLetterStyle && (
+                  <div>
+                    <span className={`text-sm font-medium text-primary ${accentClasses}`}>Preferred Letter Style:</span>
+                    <p className={`text-sm ${bodyClasses} text-foreground/80 mt-1`}>
+                      {friendData.preferredLetterStyle}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bio Card */}
+          {friendData?.bio && (
+            <Card className="bg-white/90 backdrop-blur-sm border-primary/10 shadow-letter">
+              <CardHeader>
+                <CardTitle className={`text-lg ${headingClasses} flex items-center gap-2`}>
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  About {friendData.name || friendData.username}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className={`${bodyClasses} text-foreground/80 leading-relaxed`}>
+                  "{friendData.bio}"
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Enhanced Conversation Starters */}
+        {(friendData?.interests || friendData?.languages || friendData?.writingStyle) && (
+          <Card className="bg-white/90 backdrop-blur-sm border-primary/10 shadow-letter mb-8">
+            <CardHeader>
+              <CardTitle className={`text-xl ${headingClasses} flex items-center gap-2`}>
+                <Sparkles className="h-6 w-6 text-primary" />
+                Letter Writing Inspiration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className={`text-sm ${bodyClasses} text-foreground/70 mb-4`}>
+                Here are some thoughtful conversation starters based on {friendData.name || friendData.username}'s profile:
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Interest-based suggestions */}
+                {friendData.interests && friendData.interests.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className={`text-sm font-semibold text-primary ${accentClasses} flex items-center gap-1`}>
+                      <Heart className="h-4 w-4" />
+                      About Their Interests
+                    </h4>
+                    {friendData.interests.slice(0, 3).map((interest, index) => (
+                      <div key={index} className="text-sm bg-primary/5 rounded-lg p-3 border border-primary/10">
+                        <span className={`${bodyClasses} text-foreground/80`}>
+                          "I noticed you're interested in {interest.toLowerCase()}. What got you started with that?"
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Language-based suggestions */}
+                {friendData.languages && friendData.languages.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className={`text-sm font-semibold text-primary ${accentClasses} flex items-center gap-1`}>
+                      <Languages className="h-4 w-4" />
+                      Language & Culture
+                    </h4>
+                    <div className="text-sm bg-primary/5 rounded-lg p-3 border border-primary/10">
+                      <span className={`${bodyClasses} text-foreground/80`}>
+                        "I see you speak {friendData.languages.join(' and ')}. What's your favorite thing about each culture?"
+                      </span>
+                    </div>
+                    {friendData.country && (
+                      <div className="text-sm bg-primary/5 rounded-lg p-3 border border-primary/10">
+                        <span className={`${bodyClasses} text-foreground/80`}>
+                          "What's something unique about life in {friendData.country} that people might not know?"
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Writing style suggestions */}
+                {friendData.writingStyle && (
+                  <div className="space-y-2 md:col-span-2">
+                    <h4 className={`text-sm font-semibold text-primary ${accentClasses} flex items-center gap-1`}>
+                      <BookOpen className="h-4 w-4" />
+                      Writing & Communication
+                    </h4>
+                    <div className="text-sm bg-primary/5 rounded-lg p-3 border border-primary/10">
+                      <span className={`${bodyClasses} text-foreground/80`}>
+                        "I'd love to know more about your writing style - do you prefer sharing stories, deep thoughts, or everyday moments?"
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Letter Dialog */}
+        <LetterDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          onSend={handleSubmit}
+          recipientId={friendId || undefined}
+          recipientName={friendData?.name || friendData?.username}
+          type="letter"
+          title="Write Letter to Friend"
+          description="Send your first letter to start a meaningful connection"
+        />
       </div>
     </div>
   );

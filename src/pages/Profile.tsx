@@ -191,7 +191,7 @@ const Profile = () => {
             <h2 className={`text-3xl lg:text-4xl text-foreground ${headingClasses}`}>
               Your Profile
             </h2>
-            <img className="h-16 w-16" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="" />
+            <img className="h-16 w-16" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-qT0qCttwF0fSi4qeWZj6vo2Za76keg.png" alt="" />
           </div>
           <p className={`text-lg text-foreground/80 ${bodyClasses}`}>
             Share your story and interests to connect with kindred spirits around the world.
@@ -202,7 +202,7 @@ const Profile = () => {
           {/* Personal Information */}
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
             <div className="flex items-center gap-3 mb-6">
-              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="User" />
+              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NzneqbRLSvSpxFnid3MW4HHav3vtzo.png" alt="User" />
               <h3 className={`text-lg font-semibold ${headingClasses}`}>
                 Personal Information
               </h3>
@@ -286,7 +286,7 @@ const Profile = () => {
           {/* Location & Languages */}
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
             <div className="flex items-center gap-3 mb-6">
-              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Location" />
+              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-dY7UJjMGBYLeRozGgfl3XmFvIJui9V.png" alt="Location" />
               <h3 className={`text-lg font-semibold ${headingClasses}`}>
                 Location & Languages
               </h3>
@@ -375,7 +375,7 @@ const Profile = () => {
           {/* Bio */}
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
             <div className="flex items-center gap-3 mb-6">
-              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Bio" />
+              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-WjC4MtrGSDHdSawB8oRzxQ92TZjQB1.png" alt="Bio" />
               <h3 className={`text-lg font-semibold ${headingClasses}`}>
                 About You
               </h3>
@@ -397,7 +397,7 @@ const Profile = () => {
           {/* Interests Selection */}
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-letter border-none p-6">
             <div className="flex items-center gap-3 mb-6">
-              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="Interests" />
+              <img className="h-8 w-8" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-TzoD7VStyBaazeXgQFVSjBPEpOqHGB.png" alt="Interests" />
               <h3 className={`text-lg font-semibold ${headingClasses}`}>
                 Your Interests
               </h3>

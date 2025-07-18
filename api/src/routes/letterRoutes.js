@@ -12,7 +12,12 @@ import {
   sendRandomMatchLetter,
   getNextCycleInfo,
   triggerLetterCycle,
-  getArchivedLetters
+  getArchivedLetters,
+  acceptFriendLetter,
+  rejectFriendLetter,
+  getPendingFriendLetters,
+  getIncomingLetters,
+  deliverScheduledLetters
 } from '../controllers/letterController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -26,9 +31,16 @@ router.get('/cycle/next', getNextCycleInfo);
 router.post('/cycle/trigger', triggerLetterCycle); // For testing
 router.get('/archived', getArchivedLetters);
 
+// Friend letter routes
+router.get('/pending-friend-letters', getPendingFriendLetters);
+router.post('/:letterId/accept', acceptFriendLetter);
+router.post('/:letterId/reject', rejectFriendLetter);
+
 // Letter routes
 router.get('/inbox', getInbox);
+router.get('/incoming', getIncomingLetters);
 router.get('/sent', getSentLetters);
+router.post('/deliver-scheduled', deliverScheduledLetters);
 router.get('/matched-recipients', getMatchedRecipients);
 router.get('/conversation/:friendId', getConversation);
 router.get('/:id', getLetterById);

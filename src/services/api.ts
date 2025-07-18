@@ -1,19 +1,6 @@
+import { getAuthHeaders } from '@/utils/auth';
+
 const API_BASE = 'http://localhost:5000/api';
-
-// Get auth token from localStorage
-const getAuthToken = () => {
-  return localStorage.getItem('token') || localStorage.getItem('authToken');
-};
-
-// Create headers with auth token
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  console.log('Auth token:', token ? 'Present' : 'Missing');
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` })
-  };
-};
 
 // Auth API calls
 export const authAPI = {
@@ -32,6 +19,7 @@ export const authAPI = {
     if (data.token) {
       localStorage.setItem('token', data.token);
       localStorage.setItem('authToken', data.token); // Store both for compatibility
+      console.log('Login successful, token stored');
     }
     return data;
   },
@@ -49,7 +37,9 @@ export const authAPI = {
     
     const data = await response.json();
     if (data.token) {
+      localStorage.setItem('token', data.token);
       localStorage.setItem('authToken', data.token);
+      console.log('Registration successful, token stored');
     }
     return data;
   },
@@ -63,12 +53,16 @@ export const authAPI = {
       throw new Error('Failed to get current user');
     }
     
-    return response.json();
+    const userData = await response.json();
+    console.log('Current user data fetched:', userData);
+    return userData;
   },
 
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('user'); // Clean up any old user data
+    console.log('User logged out, localStorage cleared');
   }
 };
 
@@ -318,17 +312,26 @@ export const lettersAPI = {
     content: string;
     deliveryDelay?: number;
   }) => {
+    console.log('API: Sending reply request to:', `${API_BASE}/letters/reply`);
+    console.log('API: Request data:', replyData);
+    
     const response = await fetch(`${API_BASE}/letters/reply`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(replyData)
     });
     
+    console.log('API: Response status:', response.status);
+    
     if (!response.ok) {
-      throw new Error('Failed to reply to letter');
+      const errorText = await response.text();
+      console.error('API: Error response:', errorText);
+      throw new Error(`Failed to reply to letter: ${response.status} - ${errorText}`);
     }
     
-    return response.json();
+    const result = await response.json();
+    console.log('API: Success response:', result);
+    return result;
   },
 
   getConversation: async (friendId: string) => {
@@ -392,6 +395,47 @@ export const lettersAPI = {
       const errorText = await response.text();
       console.error('Error response:', errorText);
       throw new Error(`Failed to send random match letter: ${response.status} ${errorText}`);
+    }
+    
+    return response.json();
+  },
+
+  // Get pending friend letters (delivered letters waiting for accept/reject)
+  getPendingFriendLetters: async () => {
+    const response = await fetch(`${API_BASE}/letters/pending-friend-letters`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to get pending friend letters');
+    }
+    
+    return response.json();
+  },
+
+  // Accept a friend letter
+  acceptFriendLetter: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/letters/${letterId}/accept`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to accept friend letter');
+    }
+    
+    return response.json();
+  },
+
+  // Reject a friend letter
+  rejectFriendLetter: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/letters/${letterId}/reject`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to reject friend letter');
     }
     
     return response.json();
@@ -486,6 +530,19 @@ export const draftsAPI = {
     }
     
     return response.json();
+  },
+
+  sendDraft: async (draftId: string) => {
+    const response = await fetch(`${API_BASE}/drafts/${draftId}/send`, {
+      method: 'PATCH',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to send draft');
+    }
+    
+    return response.json();
   }
 };
 
@@ -559,6 +616,11 @@ export const api = {
   getConversation: lettersAPI.getConversation,
   getMatchedRecipients: lettersAPI.getMatchedRecipients,
   
+  // Friend letter methods
+  getPendingFriendLetters: lettersAPI.getPendingFriendLetters,
+  acceptFriendLetter: lettersAPI.acceptFriendLetter,
+  rejectFriendLetter: lettersAPI.rejectFriendLetter,
+  
   // Mark letter as read
   markLetterAsRead: async (letterId: string) => {
     const response = await fetch(`${API_BASE}/letters/${letterId}/read`, {
@@ -598,10 +660,70 @@ export const api = {
   createDraft: draftsAPI.createDraft,
   updateDraft: draftsAPI.updateDraft,
   deleteDraft: draftsAPI.deleteDraft,
+  sendDraft: draftsAPI.sendDraft,
   getDraftStats: draftsAPI.getDraftStats,
   
   // Letter cycle methods
   getNextCycleInfo: letterCycleAPI.getNextCycleInfo,
   triggerCycle: letterCycleAPI.triggerCycle,
-  getArchivedLetters: letterCycleAPI.getArchivedLetters
+  getArchivedLetters: letterCycleAPI.getArchivedLetters,
+  
+  // Incoming letters methods (letters in transit)
+  getInTransitLetters: async () => {
+    console.log('🔍 Fetching incoming letters...');
+    const response = await fetch(`${API_BASE}/letters/incoming`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    console.log('📡 Response status:', response.status);
+    
+    if (!response.ok) {
+      console.error('❌ Failed to fetch incoming letters:', response.status, response.statusText);
+      throw new Error('Failed to fetch incoming letters');
+    }
+    
+    const letters = await response.json();
+    console.log('📬 Incoming letters received:', letters);
+    return { inTransitLetters: letters }; // Wrap in expected format for compatibility
+  },
+  
+  processReadyLetters: async () => {
+    const response = await fetch(`${API_BASE}/letters/deliver-scheduled`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to process ready letters');
+    }
+    
+    return response.json();
+  },
+  
+  deliverLetter: async (letterId: string) => {
+    const response = await fetch(`${API_BASE}/in-transit/deliver/${letterId}`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to deliver letter');
+    }
+    
+    return response.json();
+  },
+  
+  getDeliveryStats: async () => {
+    const response = await fetch(`${API_BASE}/in-transit/stats`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch delivery stats');
+    }
+    
+    return response.json();
+  }
 };

@@ -7,8 +7,10 @@ import profileRoutes from './routes/profileRoutes.js';
 import letterRoutes from './routes/letterRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
 import draftRoutes from './routes/draftRoutes.js';
+import inTransitRoutes from './routes/inTransitRoutes.js';
 import { initScheduledTasks } from './services/scheduledTasks.js';
 import letterCycleService from './services/letterCycleService.js';
+import deliveryService from './services/deliveryService.js';
 
 dotenv.config();
 
@@ -36,6 +38,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/letters', letterRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/drafts', draftRoutes);
+app.use('/api/in-transit', inTransitRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -59,9 +62,13 @@ mongoose.connect(MONGODB_URI)
     // Start letter cycle service
     letterCycleService.start();
     
+    // Start delivery processor for letter timers
+    deliveryService.startDeliveryProcessor();
+    
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log('Letter cycling system active ⏰');
+      console.log('Letter delivery processor active 📮');
     });
   })
   .catch((error) => {
