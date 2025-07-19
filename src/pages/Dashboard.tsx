@@ -1,80 +1,224 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Clock, Globe, Heart, Users, Edit3, Send, FileText, PenTool, MessageSquare, Plus, Search, Flame, Star, Trophy, TrendingUp } from "lucide-react";
+import { Mail, Clock, Globe, Heart, Users, Edit3, Send, FileText, PenTool, MessageSquare, Plus, Search, Flame, Star, Trophy, TrendingUp, Loader2 } from "lucide-react";
 import { AnimateSvg } from "@/components/ui/AnimateSvg";
 import Navigation from "@/components/Navigation";
+import { api } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { isAuthenticated, getCurrentUserId } from "@/utils/auth";
 import "@/styles/fonts.css";
+
+// Helper function to format time ago
+const formatTimeAgo = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  return date.toLocaleDateString();
+};
+
+interface Activity {
+  _id: string;
+  type: "received" | "sent";
+  subject: string;
+  content: string;
+  sender: {
+    name: string;
+    username: string;
+    country: string;
+  };
+  recipient: {
+    name: string;
+    username: string;
+    country: string;
+  };
+  status: "sent" | "delivered" | "read";
+  deliveredAt: string;
+  readAt?: string;
+  createdAt: string;
+  timeAgo: string;
+}
+
+interface UserProfile {
+  name?: string;
+  country?: string;
+  timezone?: string;
+  friends?: number;
+  lettersReceived?: number;
+  lettersSent?: number;
+  user?: {
+    name?: string;
+    country?: string;
+    timezone?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+interface DashboardStats {
+  incomingLetters: number;
+  friendRequests: number;
+  writingStreak: number;
+  totalLetters: number;
+  totalFriends: number;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // State for live data
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    incomingLetters: 0,
+    friendRequests: 0,
+    writingStreak: 0,
+    totalLetters: 0,
+    totalFriends: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Additional dashboard data (static for now, can be made dynamic later)
+  const [trendingTopics] = useState([
+    { topic: "Travel Adventures", count: 234 },
+    { topic: "Local Food Culture", count: 189 },
+    { topic: "Holiday Traditions", count: 156 },
+    { topic: "City Life Stories", count: 142 }
+  ]);
+
+  const [featuredWriters] = useState([
+    { name: "Sarah Chen", location: "Singapore", letters: 45, specialty: "Cultural stories" },
+    { name: "Marco Rodriguez", location: "Mexico City", letters: 38, specialty: "Food & traditions" },
+    { name: "Aisha Patel", location: "Mumbai", letters: 52, specialty: "Urban life" }
+  ]);
+
+  const [letterOfTheDay] = useState({
+    title: "Morning Rituals Around the World",
+    author: "Elena Kowalski",
+    location: "Warsaw, Poland",
+    excerpt: "Every morning at 6 AM, I watch my neighbor Mrs. Anna water her geraniums on the balcony across from mine. It's a ritual that connects us without words...",
+    likes: 127
+  });
 
   // Font combinations with Inter replacing Alata
   const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
   const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
   const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
-  const recentActivity = [
-    {
-      id: "1",
-      type: "received",
-      title: "Autumn Reflections from Tokyo",
-      username: "Akira",
-      location: "Tokyo, Japan",
-      time: "2 hours ago",
-      isOpened: false,
-      letterContent: "Dear friend, I hope this letter finds you well. As I write this, the autumn leaves in Tokyo are painting the city in brilliant shades of red and gold..."
-    },
-    {
-      id: "2",
-      type: "sent",
-      title: "My thoughts on Barcelona",
-      username: "Maria",
-      location: "Barcelona, Spain",
-      time: "1 day ago",
-      isDelivered: true,
-      isOpened: true,
-      letterContent: "I wanted to share with you the incredible experience I had visiting the Sagrada Familia yesterday. The way the light filters through the stained glass windows..."
-    },
-    {
-      id: "3",
-      type: "sent",
-      title: "Coffee culture in Seattle",
-      username: "Alex",
-      location: "Seattle, USA",
-      time: "2 days ago",
-      isDelivered: true,
-      isOpened: false,
-      letterContent: "Living in Seattle has given me such an appreciation for coffee culture. There's something magical about the way people here treat their morning ritual..."
-    },
-    {
-      id: "4",
-      type: "received",
-      title: "Greetings from Prague",
-      username: "Elena",
-      location: "Prague, Czech Republic",
-      time: "3 days ago",
-      isOpened: true,
-      letterContent: "I'm writing this from my favorite little café in Prague's old town. The cobblestone streets are wet from the morning rain, and the city feels like something out of a fairy tale..."
-    },
-    {
-      id: "5",
-      type: "sent",
-      title: "Life in the countryside",
-      username: "Marcus",
-      location: "Yorkshire, England",
-      time: "5 days ago",
-      isDelivered: false,
-      isOpened: false,
-      letterContent: "I've been thinking about our conversation about city life vs rural living. Here in Yorkshire, the pace is so different from what you described in New York..."
-    }
-  ];
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        if (!isAuthenticated()) {
+          navigate('/signin');
+          return;
+        }
 
-  // Status data
-  const incomingLetters = 0; // Change this to dynamic data
-  const friendRequests = 2; // Change this to dynamic data
+        setLoading(true);
+        setError(null);
+
+        // Fetch all necessary data in parallel
+        const [inboxLetters, sentLetters, userProfileData, friendRequestsData, friendsData] = await Promise.all([
+          api.getInboxLetters(),
+          api.getSentLetters(),
+          api.getProfile(),
+          api.getFriendRequests(),
+          api.getFriends()
+        ]);
+
+        // Process recent activity from both inbox and sent letters
+        const currentUserId = getCurrentUserId();
+        
+        // Combine and sort recent letters
+        const allRecentLetters = [
+          ...inboxLetters.slice(0, 3).map((letter: any) => ({ ...letter, type: 'received' })),
+          ...sentLetters.slice(0, 2).map((letter: any) => ({ ...letter, type: 'sent' }))
+        ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5);
+
+        const activityData: Activity[] = allRecentLetters.map((letter: any) => ({
+          _id: letter._id,
+          type: letter.type,
+          subject: letter.subject || (letter.type === 'received' ? 'Letter received' : 'Letter sent'),
+          content: letter.content || '',
+          sender: {
+            name: letter.sender?.name || letter.sender?.username || 'Unknown',
+            username: letter.sender?.username || '',
+            country: letter.sender?.country || 'Unknown'
+          },
+          recipient: {
+            name: letter.recipient?.name || letter.recipient?.username || 'Unknown',
+            username: letter.recipient?.username || '',
+            country: letter.recipient?.country || 'Unknown'
+          },
+          status: letter.status,
+          deliveredAt: letter.deliveredAt,
+          readAt: letter.readAt,
+          createdAt: letter.createdAt,
+          timeAgo: formatTimeAgo(letter.deliveredAt || letter.createdAt)
+        }));
+
+        setRecentActivity(activityData);
+        
+        // Update user profile with actual data
+        console.log('Raw user profile data received:', userProfileData);
+        console.log('Profile structure:', JSON.stringify(userProfileData, null, 2));
+        
+        // Try to extract the country from different possible locations
+        const country = userProfileData?.country || 
+                       userProfileData?.user?.country || 
+                       userProfileData?.profile?.country;
+        console.log('Extracted country:', country);
+        
+        setUserProfile(userProfileData);
+
+        // Calculate dashboard stats with real data
+        const unreadLettersCount = inboxLetters.filter((letter: any) => 
+          letter.status === 'delivered' && !letter.readAt
+        ).length;
+
+        const pendingRequestsCount = Array.isArray(friendRequestsData) ? friendRequestsData.length : 0;
+        const friendsCount = Array.isArray(friendsData) ? friendsData.length : 0;
+
+        // Calculate writing streak (simple implementation - letters sent in last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const recentSentLetters = sentLetters.filter((letter: any) => 
+          new Date(letter.createdAt) > sevenDaysAgo
+        );
+
+        setDashboardStats({
+          incomingLetters: unreadLettersCount,
+          friendRequests: pendingRequestsCount,
+          writingStreak: recentSentLetters.length,
+          totalLetters: inboxLetters.length + sentLetters.length,
+          totalFriends: friendsCount
+        });
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data');
+        toast({
+          title: "Error loading dashboard",
+          description: "Please refresh the page to try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [navigate, toast]);
 
   // User location and time data
   const getCurrentGreeting = () => {
@@ -94,44 +238,63 @@ const Dashboard = () => {
     });
   };
 
-  const userLocationData = {
-    location: "New York, United States", // Replace with dynamic user location
-    weather: "Partly cloudy, 22°C", // Replace with dynamic weather data
-    greeting: getCurrentGreeting(),
-    date: getCurrentDate()
+  const getUserLocationData = () => {
+    let location = "Unknown location";
+    let needsProfileCompletion = false;
+    
+    if (loading) {
+      location = "Loading location...";
+    } else if (userProfile) {
+      // Try multiple possible locations for the country field
+      const country = userProfile.country || 
+                     userProfile.user?.country || 
+                     userProfile.profile?.country;
+      
+      if (country) {
+        location = country;
+      } else if (userProfile.name || userProfile.user?.name) {
+        // If we have user data but no country, show that profile needs completion
+        location = "Profile incomplete";
+        needsProfileCompletion = true;
+      }
+    }
+    
+    return {
+      location,
+      weather: "Partly cloudy, 22°C", // TODO: Integrate weather API
+      greeting: getCurrentGreeting(),
+      date: getCurrentDate(),
+      needsProfileCompletion
+    };
+  };
+
+  // Helper function to format time ago
+  const getTimeAgo = (date: string) => {
+    const now = new Date();
+    const letterDate = new Date(date);
+    const diffInHours = Math.floor((now.getTime() - letterDate.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "Just now";
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
   };
 
   // Additional dashboard data
-  const [writingStreak, setWritingStreak] = useState(7); // consecutive days - make it dynamic
-  const trendingTopics = [
-    { topic: "Travel Adventures", count: 234 },
-    { topic: "Local Food Culture", count: 189 },
-    { topic: "Holiday Traditions", count: 156 },
-    { topic: "City Life Stories", count: 142 }
-  ];
+  const [writingStreak, setWritingStreak] = useState(dashboardStats.writingStreak);
 
-  const featuredWriters = [
-    { name: "Sarah Chen", location: "Singapore", letters: 45, specialty: "Cultural stories" },
-    { name: "Marco Rodriguez", location: "Mexico City", letters: 38, specialty: "Food & traditions" },
-    { name: "Aisha Patel", location: "Mumbai", letters: 52, specialty: "Urban life" }
-  ];
-
-  const letterOfTheDay = {
-    title: "Morning Rituals Around the World",
-    author: "Elena Kowalski",
-    location: "Warsaw, Poland",
-    excerpt: "Every morning at 6 AM, I watch my neighbor Mrs. Anna water her geraniums on the balcony across from mine. It's a ritual that connects us without words...",
-    likes: 127
-  };
-
-  const renderTickIcon = (activity: any) => {
+  const renderTickIcon = (activity: Activity) => {
     if (activity.type === "received") return null;
     
-    if (!activity.isDelivered) {
+    if (activity.status === "sent") {
       return <Clock className="h-4 w-4 text-orange-500" />;
     }
     
-    if (activity.isOpened) {
+    if (activity.status === "read") {
       return (
         <div className="flex">
           <Mail className="h-4 w-4 text-blue-500 -mr-1" />
@@ -142,6 +305,46 @@ const Dashboard = () => {
     
     return <Mail className="h-4 w-4 text-gray-500" />;
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16">
+        <Navigation />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <h2 className={`text-2xl ${headingClasses} mb-2`}>Loading Dashboard</h2>
+              <p className={`${bodyClasses}`}>Fetching your latest letters and activity...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen pt-16">
+        <Navigation />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <h2 className={`text-2xl ${headingClasses} mb-2 text-red-600`}>Error Loading Dashboard</h2>
+              <p className={`${bodyClasses} mb-4`}>{error}</p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const userLocationData = getUserLocationData();
 
   return (
     <div className="min-h-screen pt-16">
@@ -173,6 +376,16 @@ const Dashboard = () => {
                     </p>
                     <p className={`text-xs text-foreground/80`}>
                       {userLocationData.location}
+                      {userLocationData.needsProfileCompletion && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="p-0 h-auto ml-2 text-xs text-primary underline"
+                          onClick={() => navigate('/profile')}
+                        >
+                          Complete profile
+                        </Button>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -203,15 +416,15 @@ const Dashboard = () => {
           {/* Recent Activity Cards */}
           <div className="overflow-x-auto pb-4 scrollbar-hide">
             <div className="flex gap-6 w-max">
-              {recentActivity.map((activity) => (
+              {recentActivity.length > 0 ? recentActivity.map((activity) => (
                 <div
-                  key={activity.id}
+                  key={activity._id}
                   className="group relative cursor-pointer flex-shrink-0"
                   onClick={() => {
                     if (activity.type === "received") {
                       navigate('/inbox');
                     } else {
-                      navigate('/drafts');
+                      navigate('/inbox'); // Changed from '/drafts' to '/inbox' since we're showing sent letters
                     }
                   }}
                 >
@@ -230,10 +443,10 @@ const Dashboard = () => {
                         <div className="flex-1 p-6 flex flex-col">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3 mb-2">
-                              <h3 className={`text-lg font-semibold ${headingClasses} group-hover:text-primary transition-colors`}>
-                                {activity.title}
+                              <h3 className={`text-lg font-semibold ${headingClasses} group-hover:text-primary transition-colors line-clamp-2`}>
+                                {activity.subject}
                               </h3>
-                              {activity.type === "received" && !activity.isOpened && (
+                              {activity.type === "received" && activity.status === "delivered" && (
                                 <Badge className="bg-primary text-white text-xs px-2 py-1">
                                   New
                                 </Badge>
@@ -247,22 +460,29 @@ const Dashboard = () => {
                           </div>
                           
                           <p className={`text-sm ${bodyClasses} line-clamp-4 mb-4 flex-1`}>
-                            {activity.letterContent}
+                            {activity.content}
                           </p>
                           
                           <div className="mt-auto space-y-2">
                             <div className="flex items-center gap-2">
                               <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-NohBtZSgbbGjRMUlI8hWYra0AByga7%20(1).png" alt="" />
                               <span className={`text-sm ${accentClasses}`}>
-                                {activity.type === "received" ? "From" : "To"} {activity.username}
+                                {activity.type === "received" ? "From" : "To"} {
+                                  activity.type === "received" 
+                                    ? activity.sender.name || activity.sender.username
+                                    : activity.recipient.name || activity.recipient.username
+                                }
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className={`text-sm ${bodyClasses}`}>
-                                {activity.location}
+                                {activity.type === "received" 
+                                  ? activity.sender.country 
+                                  : activity.recipient.country
+                                }
                               </span>
                               <span className={`text-xs ${bodyClasses}`}>
-                                {activity.time}
+                                {activity.timeAgo}
                               </span>
                             </div>
                           </div>
@@ -274,45 +494,81 @@ const Dashboard = () => {
                     </CardContent>
                   </Card>
                 </div>
-              ))}
+              )) : (
+                <div className="w-80 h-96 flex items-center justify-center">
+                  <div className="text-center">
+                    <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className={`text-lg ${headingClasses} mb-2 text-gray-600`}>No Recent Activity</h3>
+                    <p className={`text-sm ${bodyClasses} text-gray-500`}>Start writing your first letter!</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Status Messages */}
           <div className="space-y-4">
             {/* Incoming Letters Status */}
-            <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none">
+            <div 
+              className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate('/inbox')}
+            >
               <div className="flex items-center gap-3">
                 <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-WYuC7gUQSKvGrmWIMI6NB1Ec64dbEv%20(1).png" alt="" />
-                <div>
+                <div className="flex-1">
                   <p className={`text-sm font-medium ${headingClasses}`}>
                     Incoming Letters
                   </p>
                   <p className={`text-xs text-foreground/80`}>
-                    {incomingLetters > 0 
-                      ? `${incomingLetters} incoming letter${incomingLetters > 1 ? 's' : ''} at this moment`
-                      : 'No incoming letters at this moment'
+                    {loading ? 'Checking for new letters...' : 
+                      (dashboardStats.incomingLetters > 0 
+                        ? `${dashboardStats.incomingLetters} unread letter${dashboardStats.incomingLetters > 1 ? 's' : ''} waiting for you`
+                        : 'No unread letters at this moment'
+                      )
                     }
                   </p>
                 </div>
+                {dashboardStats.incomingLetters > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {dashboardStats.incomingLetters}
+                  </Badge>
+                )}
               </div>
             </div>
 
             {/* Friend Requests Status */}
-            <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none">
+            <div 
+              className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-letter border-none cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => {
+                if (dashboardStats.friendRequests > 0) {
+                  // TODO: Navigate to friend requests page when available
+                  toast({
+                    title: "Friend Requests",
+                    description: "Friend requests management coming soon!",
+                  });
+                }
+              }}
+            >
               <div className="flex items-center gap-3">
                 <img className="h-10 w-10" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-qT0qCttwF0fSi4qeWZj6vo2Za76keg.png" alt="" />
-                <div>
+                <div className="flex-1">
                   <p className={`text-sm font-medium ${headingClasses}`}>
                     Friend Requests
                   </p>
                   <p className={`text-xs text-foreground/80`}>
-                    {friendRequests > 0 
-                      ? `${friendRequests} pending friend request${friendRequests > 1 ? 's' : ''}`
-                      : 'No pending friend requests'
+                    {loading ? 'Checking for friend requests...' : 
+                      (dashboardStats.friendRequests > 0 
+                        ? `${dashboardStats.friendRequests} pending friend request${dashboardStats.friendRequests > 1 ? 's' : ''}`
+                        : 'No pending friend requests'
+                      )
                     }
                   </p>
                 </div>
+                {dashboardStats.friendRequests > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {dashboardStats.friendRequests}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -371,10 +627,10 @@ const Dashboard = () => {
                 </div>
                 <div className="text-right">
                   <div className={`text-3xl font-bold ${headingClasses} text-orange-500`}>
-                    {writingStreak}
+                    {dashboardStats.writingStreak}
                   </div>
                   <div className={`text-sm text-foreground/80`}>
-                    {writingStreak === 1 ? 'day' : 'days'}
+                    {dashboardStats.writingStreak === 1 ? 'day' : 'days'}
                   </div>
                 </div>
               </div>

@@ -4,12 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Send } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Send, MapPin, Clock, User } from "lucide-react";
 import Navigation from "@/components/Navigation";
-import LetterDialog from "@/components/LetterDialog";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { isAuthenticated, getCurrentUserId } from "@/utils/auth";
+import "@/styles/fonts.css";
 
 interface Letter {
   _id: string;
@@ -27,7 +30,10 @@ interface Letter {
   };
   status: "sent" | "delivered" | "read";
   type: "delivery" | "reply";
+  deliveredAt?: string;
+  readAt?: string;
   createdAt: string;
+  replyTo?: string;
 }
 
 interface Friend {
@@ -49,8 +55,12 @@ const ReplyLetter = () => {
   const [replyContent, setReplyContent] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [isSending, setIsSending] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Font combinations
+  const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
+  const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
+  const accentClasses = "font-inter font-medium tracking-wide text-foreground/80";
 
   useEffect(() => {
     // Check authentication status
@@ -82,8 +92,6 @@ const ReplyLetter = () => {
       setOriginalLetter(letter);
       setFriend(friendData);
       setReplyTitle(`Re: ${letter.subject}`);
-      // Open the dialog immediately
-      setIsDialogOpen(true);
     } else {
       console.log('No state provided - redirecting to inbox');
       toast({
@@ -101,34 +109,52 @@ const ReplyLetter = () => {
     setWordCount(words.length);
   }, [replyContent]);
 
-  const handleSendReply = async (data: { subject: string; content: string }) => {
-    const result = await api.replyToLetter({
-      letterId: originalLetter!._id,
-      subject: data.subject,
-      content: data.content,
-      deliveryDelay: 0 // Send immediately
-    });
+  const handleSendReply = async () => {
+    if (!replyContent.trim() || !replyTitle.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both a subject and content for your reply.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    toast({
-      title: "Reply sent successfully!",
-      description: "Your reply has been sent to your friend.",
-    });
+    if (wordCount < 10) {
+      toast({
+        title: "Reply too short",
+        description: "Please write at least 10 words to send a meaningful reply.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    // Navigate back to friend conversation
-    navigate('/friend-conversation', { 
-      state: { 
-        friend,
-        message: "Your reply has been sent successfully!",
-        refreshConversation: true
-      }
-    });
+    setIsSending(true);
+    
+    try {
+      const result = await api.replyToLetter({
+        letterId: originalLetter!._id,
+        subject: replyTitle,
+        content: replyContent,
+        deliveryDelay: 0 // Send immediately
+      });
 
-    return result;
-  };
+      toast({
+        title: "Reply sent successfully!",
+        description: "Your reply has been sent and a friendship has been created. You can now continue the conversation from your Friends page.",
+      });
 
-  const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    navigate('/friend-conversation', { state: { friend } });
+      // Navigate back to inbox
+      navigate('/inbox');
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: "Failed to send reply",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   if (!originalLetter || !friend) {
@@ -156,68 +182,134 @@ const ReplyLetter = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/friend-conversation', { state: { friend } })}
+              onClick={() => navigate('/inbox')}
               className="flex items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Conversation
+              Back to Inbox
             </Button>
-            <h1 className="text-3xl font-semibold">Reply to Letter</h1>
+            <h1 className={`text-3xl ${headingClasses}`}>Reply to Letter</h1>
           </div>
-          <p className="text-lg text-gray-600">
+          <p className={`text-lg ${bodyClasses} opacity-80`}>
             Craft a thoughtful response to continue the conversation
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Original Letter */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Original Letter</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600">From: {friend?.name} ({friend?.country})</p>
-                <p className="text-sm text-gray-600">
-                  Sent: {originalLetter && new Date(originalLetter.createdAt).toLocaleDateString()}
+          {/* Original Letter Display */}
+          <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+            <CardHeader>
+              <CardTitle className={`text-xl ${headingClasses}`}>Original Letter</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Sender Info */}
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-amber-600" />
+                  <span className={`font-medium ${accentClasses}`}>{friend?.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-amber-600" />
+                  <span className={`text-sm ${accentClasses}`}>{friend?.country}</span>
+                </div>
+                <div className="flex items-center gap-2 ml-auto">
+                  <Clock className="h-4 w-4 text-amber-600" />
+                  <span className={`text-sm ${accentClasses}`}>
+                    {originalLetter && new Date(originalLetter.deliveredAt || originalLetter.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Friend's Interests */}
+              {friend?.interests && friend.interests.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {friend.interests.map((interest) => (
+                    <Badge key={interest} variant="secondary" className="text-xs">
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <Separator />
+              
+              {/* Letter Subject */}
+              <h4 className={`text-xl ${headingClasses} text-amber-800 break-words`}>{originalLetter?.subject}</h4>
+              
+              {/* Letter Content */}
+              <div className="bg-white p-6 rounded-lg border border-amber-200 shadow-sm max-h-96 overflow-y-auto">
+                <p className={`${bodyClasses} whitespace-pre-wrap leading-loose break-words`}>
+                  {originalLetter?.content}
                 </p>
               </div>
-              
-              <h4 className="text-xl font-semibold">{originalLetter?.subject}</h4>
-              
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="whitespace-pre-wrap">{originalLetter?.content}</p>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Reply Form */}
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Your Reply</h3>
-            <p className="text-gray-600 mb-4">Click below to compose your reply using our letter dialog.</p>
-            
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Compose Reply
-            </Button>
-          </div>
+          <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+            <CardHeader>
+              <CardTitle className={`text-xl ${headingClasses}`}>Your Reply</CardTitle>
+              <p className={`text-sm ${bodyClasses} opacity-70`}>
+                Write a thoughtful response to continue this meaningful conversation
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Reply Subject */}
+              <div className="space-y-2">
+                <Label htmlFor="replyTitle" className={`${accentClasses}`}>Subject</Label>
+                <Input
+                  id="replyTitle"
+                  value={replyTitle}
+                  onChange={(e) => setReplyTitle(e.target.value)}
+                  placeholder="Re: Subject of your reply"
+                  className="border-amber-200 focus:border-amber-400"
+                />
+              </div>
+
+              {/* Reply Content */}
+              <div className="space-y-2">
+                <Label htmlFor="replyContent" className={`${accentClasses}`}>Message</Label>
+                <Textarea
+                  id="replyContent"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  placeholder="Share your thoughts, experiences, and continue the conversation in a meaningful way..."
+                  className="min-h-[300px] border-amber-200 focus:border-amber-400 resize-none"
+                />
+                <div className="flex items-center justify-between text-sm">
+                  <span className={`${accentClasses} opacity-70`}>
+                    {wordCount} words
+                  </span>
+                  <span className={`${accentClasses} opacity-70`}>
+                    Minimum 10 words required
+                  </span>
+                </div>
+              </div>
+
+              {/* Send Button */}
+              <div className="flex justify-end pt-4">
+                <Button
+                  onClick={handleSendReply}
+                  disabled={isSending || !replyContent.trim() || !replyTitle.trim() || wordCount < 10}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2"
+                >
+                  {isSending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Sending Reply...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Send Reply
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Letter Dialog */}
-      <LetterDialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-        onSend={handleSendReply}
-        recipientId={originalLetter?.sender?._id}
-        recipientName={friend?.name}
-        type="reply"
-        replyToId={originalLetter?._id}
-        initialSubject={replyTitle}
-        title="Reply to Letter"
-        description={`Reply to ${friend?.name}'s letter`}
-      />
     </div>
   );
 };

@@ -29,6 +29,28 @@ const Profile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Calculate profile completion percentage
+  const calculateProgress = () => {
+    const fields = [
+      formData.name,
+      formData.dateOfBirth,
+      formData.gender,
+      formData.relationshipStatus,
+      formData.writingStyle,
+      formData.country,
+      formData.timezone,
+      formData.bio,
+    ];
+    const filledFields = fields.filter(field => field.trim() !== "").length;
+    const languagesComplete = selectedLanguages.length >= 1 ? 1 : 0;
+    const interestsComplete = selectedInterests.length >= 3 ? 1 : 0;
+    
+    const totalFields = fields.length + 2; // +2 for languages and interests
+    const completedFields = filledFields + languagesComplete + interestsComplete;
+    
+    return Math.round((completedFields / totalFields) * 100);
+  };
+
   // Font combinations with Inter replacing Alata
   const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
   const bodyClasses = "font-spectral text-foreground/90 leading-relaxed";
@@ -119,7 +141,14 @@ const Profile = () => {
   const availableInterests = [
     "Literature", "Travel", "Photography", "Cooking", "Music", "Art", "Philosophy",
     "History", "Science", "Nature", "Languages", "Cinema", "Technology", "Gardening",
-    "Sports", "Writing", "Culture", "Architecture", "Astronomy", "Poetry"
+    "Sports", "Writing", "Culture", "Architecture", "Astronomy", "Poetry",
+    "Dance", "Theater", "Fashion", "Gaming", "Meditation", "Yoga", "Fitness",
+    "Reading", "Journalism", "Psychology", "Sociology", "Environmental Science",
+    "Economics", "Politics", "Volunteering", "Social Work", "Education", "Teaching",
+    "Medicine", "Research", "Innovation", "Entrepreneurship", "Design", "Drawing",
+    "Painting", "Sculpture", "Crafts", "Woodworking", "Metalworking", "Sewing",
+    "Knitting", "Pottery", "Jewelry Making", "Collecting", "Antiques", "Vintage",
+    "Music Production", "Singing", "Playing Instruments", "Podcasting", "Broadcasting"
   ];
 
   const availableLanguages = [
@@ -143,16 +172,46 @@ const Profile = () => {
   ];
 
   const countries = [
-    "United States", "United Kingdom", "Canada", "Australia", "Germany", "France",
-    "Japan", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Brazil",
-    "Argentina", "Mexico", "India", "China", "South Korea", "New Zealand"
+    "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+    "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria",
+    "Cambodia", "Canada", "Chile", "China", "Colombia", "Costa Rica", "Croatia", "Czech Republic",
+    "Denmark", "Dominican Republic", "Ecuador", "Egypt", "Estonia", "Ethiopia", "Finland", "France",
+    "Georgia", "Germany", "Ghana", "Greece", "Guatemala", "Hungary", "Iceland", "India", "Indonesia",
+    "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya",
+    "Kuwait", "Latvia", "Lebanon", "Lithuania", "Luxembourg", "Malaysia", "Mexico", "Morocco", "Netherlands",
+    "New Zealand", "Nigeria", "Norway", "Pakistan", "Peru", "Philippines", "Poland", "Portugal", "Qatar",
+    "Romania", "Russia", "Saudi Arabia", "Serbia", "Singapore", "Slovakia", "Slovenia", "South Africa",
+    "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Turkey",
+    "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Venezuela", "Vietnam"
   ];
 
   const timezones = [
-    "UTC-12:00", "UTC-11:00", "UTC-10:00", "UTC-09:00", "UTC-08:00", "UTC-07:00",
-    "UTC-06:00", "UTC-05:00", "UTC-04:00", "UTC-03:00", "UTC-02:00", "UTC-01:00",
-    "UTC+00:00", "UTC+01:00", "UTC+02:00", "UTC+03:00", "UTC+04:00", "UTC+05:00",
-    "UTC+06:00", "UTC+07:00", "UTC+08:00", "UTC+09:00", "UTC+10:00", "UTC+11:00", "UTC+12:00"
+    "UTC-12:00 (Baker Island)",
+    "UTC-11:00 (American Samoa)",
+    "UTC-10:00 (Hawaii)",
+    "UTC-09:00 (Alaska)",
+    "UTC-08:00 (Los Angeles, Vancouver)",
+    "UTC-07:00 (Denver, Phoenix)",
+    "UTC-06:00 (Chicago, Mexico City)",
+    "UTC-05:00 (New York, Toronto)",
+    "UTC-04:00 (Santiago, Caracas)",
+    "UTC-03:00 (São Paulo, Buenos Aires)",
+    "UTC-02:00 (South Georgia)",
+    "UTC-01:00 (Azores)",
+    "UTC+00:00 (London, Dublin)",
+    "UTC+01:00 (Paris, Berlin, Rome)",
+    "UTC+02:00 (Cairo, Athens, Helsinki)",
+    "UTC+03:00 (Moscow, Istanbul, Nairobi)",
+    "UTC+04:00 (Dubai, Baku)",
+    "UTC+05:00 (Karachi, Tashkent)",
+    "UTC+05:30 (Mumbai, Delhi)",
+    "UTC+06:00 (Dhaka, Almaty)",
+    "UTC+07:00 (Bangkok, Jakarta)",
+    "UTC+08:00 (Beijing, Singapore, Manila)",
+    "UTC+09:00 (Tokyo, Seoul)",
+    "UTC+10:00 (Sydney, Melbourne)",
+    "UTC+11:00 (Solomon Islands)",
+    "UTC+12:00 (Auckland, Fiji)"
   ];
 
   const toggleInterest = (interest: string) => {
@@ -193,6 +252,21 @@ const Profile = () => {
             </h2>
             <img className="h-16 w-16" src="https://raw.githubusercontent.com/Sumeet-162/letterlink-images/refs/heads/main/icons/image-qT0qCttwF0fSi4qeWZj6vo2Za76keg.png" alt="" />
           </div>
+          
+          {/* Progress Bar */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-sm font-medium ${accentClasses}`}>Profile Completion</span>
+              <span className={`text-sm font-medium ${accentClasses}`}>{calculateProgress()}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${calculateProgress()}%` }}
+              ></div>
+            </div>
+          </div>
+          
           <p className={`text-lg text-foreground/80 ${bodyClasses}`}>
             Share your story and interests to connect with kindred spirits around the world.
           </p>

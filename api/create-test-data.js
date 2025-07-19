@@ -367,14 +367,32 @@ const createTestData = async () => {
     const letterTemplates = [
       {
         subject: 'Greetings from Tokyo',
-        content: 'Hello! I hope this letter finds you well. I wanted to share some thoughts about the changing seasons here in Tokyo and how they inspire my photography. The cherry blossoms are particularly beautiful this year...',
+        content: `Hello! I hope this letter finds you well. I wanted to share some thoughts about the changing seasons here in Tokyo and how they inspire my photography. 
+
+The cherry blossoms are particularly beautiful this year, creating a pink canopy over the ancient temples. Each morning, I walk through Ueno Park with my camera, capturing the delicate petals as they dance in the gentle breeze. There's something magical about this time of year - the way old traditions blend with modern life, the way nature reminds us of the cyclical beauty of existence.
+
+I've been thinking a lot about how photography can capture not just images, but emotions and memories. The fleeting nature of the sakura season teaches us to appreciate beauty in the moment, knowing it won't last forever. This philosophy deeply influences my work and my perspective on life.
+
+What moments in your life do you find most worth preserving? I'd love to hear about what inspires you in your corner of the world.
+
+With warm regards from Tokyo,
+Akira`,
         sender: 0, // Akira
         recipient: 1, // Elena
         daysAgo: 7
       },
       {
         subject: 'Architecture and Philosophy',
-        content: 'Dear friend, Thank you for your beautiful letter! Your descriptions of the cherry blossoms made me think of the spring architecture here in Prague. The way light filters through the Gothic windows reminds me of your photography...',
+        content: `Dear friend, Thank you for your beautiful letter! Your descriptions of the cherry blossoms made me think of the spring architecture here in Prague. 
+
+The way light filters through the Gothic windows reminds me of your photography - both capture fleeting moments of beauty. I've been working on restoring an old baroque building, and each stone tells a story of centuries past. The craftsmen who built these structures understood that architecture is more than just shelter; it's poetry written in stone and wood.
+
+Like your cherry blossoms, these buildings represent the eternal cycle of creation, decay, and renewal. I often wonder what stories our modern constructions will tell future generations. Do you think art and beauty will always find a way to survive, even in our increasingly digital world?
+
+The intersection of old and new fascinates me - perhaps that's why your letter resonated so deeply. Looking forward to continuing our conversation about art, beauty, and the stories we leave behind.
+
+Warm regards from Prague,
+Elena`,
         sender: 1, // Elena
         recipient: 0, // Akira
         daysAgo: 5,
@@ -382,7 +400,18 @@ const createTestData = async () => {
       },
       {
         subject: 'Adventures from Down Under',
-        content: 'G\'day mate! Hope you\'re doing well. Just got back from an amazing surfing trip along the Gold Coast. The waves were incredible and I couldn\'t help but think about how vast our world is...',
+        content: `G'day mate! Hope you're doing well. Just got back from an amazing surfing trip along the Gold Coast. The waves were incredible and I couldn't help but think about how vast our world is, yet how connected we all are through shared experiences like this.
+
+Standing on my board, watching the sunrise paint the ocean in shades of gold and orange, I felt this overwhelming sense of gratitude for the natural world around us. The Aboriginal elders here teach that the ocean is a living entity with its own spirit and wisdom. After spending days riding these waves, I'm starting to understand what they mean.
+
+Each wave is unique, just like each person we meet in life. I've been documenting my adventures through photography and writing, hoping to share the raw beauty of this continent with others. The wildlife here is unlike anywhere else - yesterday I saw a pod of dolphins playing in the surf, as if they were celebrating the simple joy of being alive.
+
+The Australian wilderness has this way of putting everything into perspective. When you're out there with nothing but the ocean, sky, and your thoughts, you realize what truly matters in life.
+
+What adventures have been calling to your soul lately? I'd love to hear about your own explorations and discoveries.
+
+Cheers from Down Under,
+Marcus`,
         sender: 2, // Marcus
         recipient: 19, // Test user
         daysAgo: 3
@@ -474,21 +503,54 @@ const createTestData = async () => {
       // Add more letters to testuser for testing
       {
         subject: 'Welcome to LetterLink!',
-        content: 'Hey there! Welcome to our wonderful community of letter writers. I hope you find some amazing connections here. Looking forward to exchanging stories and experiences with you!',
+        content: `Hey there! Welcome to our wonderful community of letter writers. I hope you find some amazing connections here. 
+
+This platform has been such a gift in my life - there's something special about taking the time to write thoughtful letters and receiving genuine responses from people around the world. In our fast-paced digital age, the art of letter writing feels like a return to something more meaningful and human.
+
+I've made some incredible friendships through LetterLink, learning about different cultures, perspectives, and ways of life. Each letter I receive teaches me something new about the world and about myself. The beauty of this community is that everyone here values deep, thoughtful communication over quick messages and small talk.
+
+Looking forward to exchanging stories and experiences with you! Don't hesitate to write about anything that interests you - your hobbies, dreams, daily life, or profound thoughts. The best letters come from the heart.
+
+I hope your journey here brings you as much joy and connection as it has brought me.
+
+Warm welcome,
+Akira`,
         sender: 0, // Akira
         recipient: 19, // Test user
         daysAgo: 1
       },
       {
         subject: 'Greetings from Prague',
-        content: 'Hello! I noticed you joined recently. I wanted to reach out and say welcome! The community here is so warm and welcoming. I hope you enjoy writing and receiving letters as much as I do.',
+        content: `Hello! I noticed you joined recently. I wanted to reach out and say welcome! The community here is so warm and welcoming. 
+
+As someone who appreciates both literature and architecture, I find that letter writing combines the best of both worlds - we're building bridges of understanding with words, creating lasting structures of friendship that span continents and cultures.
+
+There's something magical about opening your inbox to find a thoughtful letter from someone on the other side of the world. It reminds us that despite our differences in geography, language, and culture, we share so much in common as human beings.
+
+I hope you enjoy writing and receiving letters as much as I do. The conversations that unfold here are unlike any other form of communication - they're deeper, more thoughtful, and incredibly rewarding.
+
+Looking forward to getting to know you better through our letters!
+
+Best wishes from Prague,
+Elena`,
         sender: 1, // Elena
         recipient: 19, // Test user
         daysAgo: 2
       },
       {
         subject: 'Photography and Nature',
-        content: 'Hi! I saw your interests include photography and travel. I\'m a wildlife photographer from Kenya, and I\'d love to share some stories about the incredible animals I\'ve encountered. What kind of photography interests you most?',
+        content: `Hi! I saw your interests include photography and travel. I'm a wildlife photographer from Kenya, and I'd love to share some stories about the incredible animals I've encountered.
+
+Just last week, I spent three days in the Maasai Mara documenting the great migration. Watching thousands of wildebeest cross the Mara River, with crocodiles waiting below and lions stalking from the shores, was both terrifying and beautiful. Through my lens, I try to capture not just the animals themselves, but the raw emotion and drama of life in the wild.
+
+Photography has taught me patience, respect for nature, and the importance of conservation. Every image I take is a reminder of what we stand to lose if we don't protect these incredible ecosystems. The elephants here have such wisdom in their eyes - they seem to understand the weight of being among the last of their kind in certain areas.
+
+What kind of photography interests you most? I'd love to hear about your travels and the moments you've captured through your camera. There's something special about sharing photography stories with a fellow enthusiast.
+
+Looking forward to hearing from you!
+
+Best regards from Kenya,
+Amara`,
         sender: 7, // Amara
         recipient: 19, // Test user
         daysAgo: 4

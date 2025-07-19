@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Heart, Reply, Share2, MapPin, Clock, Send, Users, Globe, Shuffle, Loader2, AlertCircle } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import "@/styles/fonts.css";
 
@@ -41,6 +43,7 @@ interface ApiError {
 
 const Inbox = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +199,29 @@ const Inbox = () => {
         ? prev.filter(i => i !== interest)
         : [...prev, interest]
     );
+  };
+
+  const handleReply = () => {
+    if (selectedLetter) {
+      // Create friend data from the sender information
+      const friendData = {
+        _id: selectedLetter.sender._id,
+        name: selectedLetter.sender.name,
+        username: selectedLetter.sender.username,
+        country: selectedLetter.sender.country || 'Unknown',
+        interests: selectedLetter.sender.interests || [],
+        letterCount: 1, // This will be their first letter exchange
+        lastActivity: selectedLetter.deliveredAt
+      };
+
+      // Navigate to reply page with letter and friend data
+      navigate('/reply', {
+        state: {
+          replyTo: selectedLetter,
+          friend: friendData
+        }
+      });
+    }
   };
 
   const handleSendRandomMatch = async () => {
@@ -419,7 +445,10 @@ const Inbox = () => {
 
                       {/* Letter Preview */}
                       <p className={`text-sm ${bodyClasses} line-clamp-3 opacity-80`}>
-                        {letter.content.substring(0, 150)}...
+                        {letter.content.length > 200 
+                          ? `${letter.content.substring(0, 200)}...` 
+                          : letter.content
+                        }
                       </p>
 
                       {/* Sender Info */}
@@ -689,11 +718,11 @@ const Inbox = () => {
 
       {/* Letter Reading Modal */}
       <Dialog open={isLetterModalOpen} onOpenChange={setIsLetterModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
           {selectedLetter && (
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1 overflow-hidden">
               {/* Modal Header */}
-              <DialogHeader>
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className={`text-2xl ${headingClasses} text-foreground mb-2`}>
                   {selectedLetter.subject}
                 </DialogTitle>
@@ -709,8 +738,8 @@ const Inbox = () => {
                 </div>
               </DialogHeader>
 
-              {/* Letter Content */}
-              <div className="space-y-6">
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto space-y-6">
                 {/* Sender Info */}
                 <div className="bg-accent/5 p-4 rounded-lg border border-accent/20">
                   <div className="flex items-center justify-between mb-3">
@@ -742,52 +771,50 @@ const Inbox = () => {
                   )}
                 </div>
 
-                {/* Letter Body */}
-                <div className="bg-white/50 backdrop-blur-sm p-6 rounded-lg border border-primary/20">
-                  <div className={`${bodyClasses} leading-relaxed whitespace-pre-wrap text-foreground`}>
+                {/* Letter Body - Improved for better readability */}
+                <div className="bg-white/80 backdrop-blur-sm p-8 rounded-lg border border-primary/20 shadow-sm">
+                  <div className={`${bodyClasses} leading-loose whitespace-pre-wrap text-foreground text-base`}>
                     {selectedLetter.content}
                   </div>
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-primary/20">
-                  <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsLiked(!isLiked)}
-                      className={`border-primary/20 hover:bg-primary/10 ${isLiked ? 'bg-red-50 text-red-600' : ''}`}
-                    >
-                      <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
-                      {isLiked ? 'Liked' : 'Like'}
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // TODO: Implement reply functionality
-                        console.log('Reply to letter:', selectedLetter._id);
-                      }}
-                      className="border-primary/20 hover:bg-primary/10"
-                    >
-                      <Reply className="h-4 w-4 mr-2" />
-                      Reply
-                    </Button>
-                  </div>
-
+              {/* Action Buttons - Fixed at bottom */}
+              <div className="flex items-center justify-between pt-4 border-t border-primary/20 flex-shrink-0">
+                <div className="flex items-center gap-3">
                   <Button
-                    onClick={() => setIsLetterModalOpen(false)}
-                    className="bg-primary hover:bg-primary/90 font-inter"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsLiked(!isLiked)}
+                    className={`border-primary/20 hover:bg-primary/10 ${isLiked ? 'bg-red-50 text-red-600' : ''}`}
                   >
-                    Close
+                    <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+                    {isLiked ? 'Liked' : 'Like'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleReply}
+                    className="border-primary/20 hover:bg-primary/10"
+                  >
+                    <Reply className="h-4 w-4 mr-2" />
+                    Reply
                   </Button>
                 </div>
+
+                <Button
+                  onClick={() => setIsLetterModalOpen(false)}
+                  className="bg-primary hover:bg-primary/90 font-inter"
+                >
+                  Close
+                </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+      <Toaster />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PenTool, Send, Users, Globe, Clock, MapPin, User, Heart, BookOpen, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import LetterDialog from "@/components/LetterDialog";
-import { api } from "@/services/api";
+import { lettersAPI } from "@/services/api";
 import "@/styles/fonts.css";
 
 const WriteLetter = () => {
@@ -43,6 +43,10 @@ const WriteLetter = () => {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [relationshipStatus, setRelationshipStatus] = useState("any");
   const [preferredWritingStyle, setPreferredWritingStyle] = useState("any");
+
+  // Recipient matching state
+  const [matchedRecipients, setMatchedRecipients] = useState<any[]>([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
 
   // Font combinations with Inter replacing Alata
   const headingClasses = "font-inter font-semibold tracking-tight text-foreground";
@@ -127,71 +131,51 @@ const WriteLetter = () => {
     );
   };
 
-  const mockRecipients = [
-    { country: "Japan", distance: "6,800 km", deliveryTime: "18 hours", age: "28", interests: ["Photography", "Nature"] },
-    { country: "Brazil", distance: "3,200 km", deliveryTime: "8 hours", age: "34", interests: ["Travel", "Food"] },
-    { country: "Germany", distance: "1,500 km", deliveryTime: "3 hours", age: "42", interests: ["Literature", "Art"] }
-  ];
-
-  // Generate matched recipients based on user preferences
-  const getMatchedRecipients = () => {
-    if (selectedRegion === "worldwide" && selectedAgeGroup === "any" && selectedGender === "any" && 
-        selectedInterests.length === 0 && selectedLanguages.length === 0 && relationshipStatus === "any" && 
-        preferredWritingStyle === "any") {
-      return []; // No recipients shown if no preferences selected
+  // Fetch matched recipients based on current preferences
+  const fetchMatchedRecipients = async () => {
+    if (!hasPreferences) {
+      setMatchedRecipients([]);
+      return;
     }
 
-    // Filter recipients based on preferences
-    let filteredRecipients = [...mockRecipients];
+    setLoadingRecipients(true);
+    try {
+      const preferences = {
+        region: selectedRegion,
+        countries: selectedCountries,
+        ageGroup: selectedAgeGroup,
+        gender: selectedGender,
+        interests: selectedInterests,
+        languages: selectedLanguages,
+        relationshipStatus,
+        writingStyle: preferredWritingStyle
+      };
 
-    // Filter by region
-    if (selectedRegion !== "worldwide") {
-      if (selectedRegion === "custom" && selectedCountries.length > 0) {
-        filteredRecipients = filteredRecipients.filter(recipient => 
-          selectedCountries.includes(recipient.country)
-        );
-      } else if (selectedRegion === "asia") {
-        filteredRecipients = filteredRecipients.filter(recipient => 
-          ["Japan", "China", "South Korea", "India", "Singapore"].includes(recipient.country)
-        );
-      } else if (selectedRegion === "europe") {
-        filteredRecipients = filteredRecipients.filter(recipient => 
-          ["Germany", "France", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Denmark", "Switzerland", "Austria", "Belgium", "Portugal", "Ireland", "Finland", "United Kingdom"].includes(recipient.country)
-        );
-      } else if (selectedRegion === "south-america") {
-        filteredRecipients = filteredRecipients.filter(recipient => 
-          ["Brazil", "Argentina", "Chile", "Colombia", "Peru"].includes(recipient.country)
-        );
-      }
+      const response = await lettersAPI.getMatchedRecipients(preferences);
+      setMatchedRecipients(response.matches || []);
+    } catch (error) {
+      console.error('Error fetching matched recipients:', error);
+      setMatchedRecipients([]);
+    } finally {
+      setLoadingRecipients(false);
     }
-
-    // Filter by age group
-    if (selectedAgeGroup !== "any") {
-      filteredRecipients = filteredRecipients.filter(recipient => {
-        const age = parseInt(recipient.age);
-        switch (selectedAgeGroup) {
-          case "18-25": return age >= 18 && age <= 25;
-          case "26-35": return age >= 26 && age <= 35;
-          case "36-45": return age >= 36 && age <= 45;
-          case "46-55": return age >= 46 && age <= 55;
-          case "56-65": return age >= 56 && age <= 65;
-          case "65+": return age >= 65;
-          default: return true;
-        }
-      });
-    }
-
-    // Filter by interests (if any selected)
-    if (selectedInterests.length > 0) {
-      filteredRecipients = filteredRecipients.filter(recipient => 
-        recipient.interests.some(interest => selectedInterests.includes(interest))
-      );
-    }
-
-    return filteredRecipients.slice(0, 3); // Show max 3 recipients
   };
 
-  const matchedRecipients = getMatchedRecipients();
+  // Effect to fetch recipients when preferences change
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchMatchedRecipients();
+    }, 500); // Debounce API calls
+
+    return () => clearTimeout(debounceTimer);
+  }, [
+    selectedRegion, selectedCountries, selectedAgeGroup, selectedGender,
+    selectedInterests, selectedLanguages, relationshipStatus, preferredWritingStyle
+  ]);
+
+  const mockRecipients = matchedRecipients; // Use real matched recipients instead of mock data
+
+  // Check if user has set any preferences
   const hasPreferences = selectedRegion !== "worldwide" || selectedAgeGroup !== "any" || 
                          selectedGender !== "any" || selectedInterests.length > 0 || 
                          selectedLanguages.length > 0 || relationshipStatus !== "any" || 
@@ -221,27 +205,26 @@ const WriteLetter = () => {
     setIsSubmitting(true);
     
     try {
-      // Prepare the letter data for the random match API
-      const randomMatchData = {
+      // Prepare the letter data with targeting preferences
+      const letterPayload = {
         subject: letterData.title,
         content: letterData.content,
-        interests: selectedInterests
+        preferences: {
+          region: selectedRegion,
+          countries: selectedCountries,
+          ageGroup: selectedAgeGroup,
+          gender: selectedGender,
+          interests: selectedInterests,
+          languages: selectedLanguages,
+          relationshipStatus,
+          writingStyle: preferredWritingStyle
+        }
       };
       
-      console.log("Sending random match letter:", randomMatchData);
-      console.log("Targeting preferences:", {
-        region: selectedRegion,
-        countries: selectedCountries,
-        ageGroup: selectedAgeGroup,
-        gender: selectedGender,
-        interests: selectedInterests,
-        languages: selectedLanguages,
-        relationshipStatus,
-        writingStyle: preferredWritingStyle
-      });
+      console.log("Sending letter with preferences:", letterPayload);
       
       // Send the letter via API
-      const response = await api.sendRandomMatchLetter(randomMatchData);
+      const response = await lettersAPI.sendRandomMatchLetter(letterPayload);
       
       console.log("Letter sent successfully:", response);
       setSubmitSuccess(true);
@@ -250,8 +233,16 @@ const WriteLetter = () => {
       setTimeout(() => {
         setLetterData({ title: "", content: "" });
         setSelectedInterests([]);
+        setSelectedLanguages([]);
+        setSelectedCountries([]);
+        // Reset all targeting preferences
+        setSelectedRegion("worldwide");
+        setSelectedAgeGroup("any");
+        setSelectedGender("any");
+        setRelationshipStatus("any");
+        setPreferredWritingStyle("any");
         setSubmitSuccess(false);
-        // Optionally navigate to inbox or sent letters
+        // Navigate to inbox to see letters from others
         navigate('/inbox');
       }, 2000);
       
@@ -273,10 +264,19 @@ const WriteLetter = () => {
   };
 
   const handleSendLetter = async (data: { subject: string; content: string }) => {
-    const response = await api.sendRandomMatchLetter({
+    const response = await lettersAPI.sendRandomMatchLetter({
       subject: data.subject,
       content: data.content,
-      interests: selectedInterests
+      preferences: {
+        region: selectedRegion,
+        countries: selectedCountries,
+        ageGroup: selectedAgeGroup,
+        gender: selectedGender,
+        interests: selectedInterests,
+        languages: selectedLanguages,
+        relationshipStatus,
+        writingStyle: preferredWritingStyle
+      }
     });
     return response;
   };
@@ -638,6 +638,18 @@ I hope this letter finds you well. I wanted to share..."
                     Select your delivery preferences to see matched recipients
                   </p>
                 </div>
+              ) : loadingRecipients ? (
+                <div className="text-center py-8">
+                  <div className="p-4 rounded-full bg-primary/10 w-fit mx-auto mb-4">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  </div>
+                  <h4 className={`text-base font-medium ${headingClasses} mb-2`}>
+                    Finding Recipients
+                  </h4>
+                  <p className={`text-sm ${bodyClasses} text-foreground/60`}>
+                    Searching for users who match your preferences...
+                  </p>
+                </div>
               ) : matchedRecipients.length === 0 ? (
                 <div className="text-center py-8">
                   <div className="p-4 rounded-full bg-amber-100 w-fit mx-auto mb-4">
@@ -652,36 +664,33 @@ I hope this letter finds you well. I wanted to share..."
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {matchedRecipients.map((recipient, index) => (
+                  {matchedRecipients.slice(0, 3).map((recipient, index) => (
                     <div key={index} className="bg-primary/5 backdrop-blur-sm rounded-lg p-4 space-y-2 border border-primary/20">
                       <div className="flex items-center space-x-2">
                         <MapPin className="w-4 h-4 text-primary" />
                         <span className={`font-medium ${accentClasses}`}>{recipient.country}</span>
                       </div>
                       <div className="space-y-1 text-sm text-foreground/80">
-                        <p>Distance: {recipient.distance}</p>
+                        {recipient.name && <p>Name: {recipient.name}</p>}
+                        {recipient.age && <p>Age: {recipient.age}</p>}
                         <p>Delivery: {recipient.deliveryTime}</p>
-                        <p>Age: {recipient.age}</p>
+                        <p>Distance: {recipient.distance}</p>
                         <div className="flex flex-wrap gap-1">
-                          {recipient.interests.map(interest => (
+                          {recipient.interests?.map((interest: string) => (
                             <Badge key={interest} variant="secondary" className="text-xs">
                               {interest}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => handleWriteToRecipient(recipient)}
-                        className="w-full mt-2 bg-primary hover:bg-primary/90 text-white"
-                      >
-                        Write Letter
-                      </Button>
                     </div>
                   ))}
                   <div className="text-center">
                     <p className={`text-xs ${bodyClasses} text-foreground/60`}>
                       Found {matchedRecipients.length} matching recipient{matchedRecipients.length !== 1 ? 's' : ''}
+                    </p>
+                    <p className={`text-xs ${bodyClasses} text-foreground/60 mt-1`}>
+                      Your letter will be sent to 3 random recipients from this pool
                     </p>
                   </div>
                 </div>
@@ -728,13 +737,15 @@ I hope this letter finds you well. I wanted to share..."
                 </div>
                 <h3 className={`font-semibold ${headingClasses}`}>
                   {!hasPreferences ? "Set Preferences First" : 
+                   loadingRecipients ? "Finding Recipients..." :
                    matchedRecipients.length === 0 ? "No Recipients Found" : 
-                   "Ready to Send?"}
+                   "Ready to Send!"}
                 </h3>
                 <p className={`text-sm ${bodyClasses} text-foreground/80`}>
                   {!hasPreferences ? "Select your delivery preferences to find recipients" :
+                   loadingRecipients ? "Searching for users who match your preferences..." :
                    matchedRecipients.length === 0 ? "Try adjusting your preferences to find potential recipients" :
-                   `Your letter will be sent to ${matchedRecipients.length} matched recipient${matchedRecipients.length !== 1 ? 's' : ''}`}
+                   `Your letter will be delivered to 3 random recipients within 24 hours`}
                 </p>
               </div>
             </div>

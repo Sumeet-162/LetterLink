@@ -346,8 +346,29 @@ export const lettersAPI = {
     return response.json();
   },
 
-  getMatchedRecipients: async () => {
-    const response = await fetch(`${API_BASE}/letters/matched-recipients`, {
+  // Get matched recipients preview based on targeting preferences
+  getMatchedRecipients: async (preferences: {
+    region?: string;
+    countries?: string[];
+    ageGroup?: string;
+    gender?: string;
+    interests?: string[];
+    languages?: string[];
+    relationshipStatus?: string;
+    writingStyle?: string;
+  } = {}) => {
+    const params = new URLSearchParams();
+    
+    if (preferences.region) params.append('region', preferences.region);
+    if (preferences.countries) params.append('countries', preferences.countries.join(','));
+    if (preferences.ageGroup) params.append('ageGroup', preferences.ageGroup);
+    if (preferences.gender) params.append('gender', preferences.gender);
+    if (preferences.interests) params.append('interests', preferences.interests.join(','));
+    if (preferences.languages) params.append('languages', preferences.languages.join(','));
+    if (preferences.relationshipStatus) params.append('relationshipStatus', preferences.relationshipStatus);
+    if (preferences.writingStyle) params.append('writingStyle', preferences.writingStyle);
+    
+    const response = await fetch(`${API_BASE}/letters/matched-recipients?${params}`, {
       headers: getAuthHeaders()
     });
     
@@ -372,11 +393,20 @@ export const lettersAPI = {
     return response.json();
   },
   
-  // Send random match letter
+  // Send random match letter with targeting preferences
   sendRandomMatchLetter: async (letterData: {
     subject: string;
     content: string;
-    interests: string[];
+    preferences?: {
+      region?: string;
+      countries?: string[];
+      ageGroup?: string;
+      gender?: string;
+      interests?: string[];
+      languages?: string[];
+      relationshipStatus?: string;
+      writingStyle?: string;
+    };
   }) => {
     console.log('Sending random match letter to:', `${API_BASE}/letters/random-match`);
     console.log('Headers:', getAuthHeaders());
