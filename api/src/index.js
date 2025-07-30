@@ -18,7 +18,13 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8081'], // Development frontend
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:8081',
+    'https://letterlink-frontend.vercel.app',  // Replace with your frontend URL
+    'https://your-frontend-domain.vercel.app', // Replace with your actual frontend URL
+    process.env.FRONTEND_URL
+  ].filter(Boolean), // Remove undefined values
   credentials: true
 }));
 app.use(express.json());

@@ -14,7 +14,9 @@
       "dest": "/index.html"
     }
   ],
-  "env": {
-    "VITE_API_BASE_URL": "@api_base_url"
+  "build": {
+    "env": {
+      "VITE_API_BASE_URL": "@vite_api_base_url"
+    }
   }
 }

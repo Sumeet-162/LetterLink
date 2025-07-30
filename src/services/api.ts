@@ -1,6 +1,7 @@
 import { getAuthHeaders } from '@/utils/auth';
 
-const API_BASE = 'http://localhost:5000/api';
+// Use environment variable for API base URL with fallback
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app/api';
 
 // Auth API calls
 export const authAPI = {
