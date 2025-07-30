@@ -21,7 +21,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://localhost:8081',
-    'https://letterlink-frontend.vercel.app',  // Your actual frontend URL
+    'https://letterlink-frontend.vercel.app',  // Original frontend URL
+    'https://letterlink-frontend-ivory.vercel.app',  // Your actual frontend URL
     process.env.FRONTEND_URL
   ].filter(Boolean), // Remove undefined values
   credentials: true

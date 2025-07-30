@@ -223,7 +223,7 @@ const Landing = () => {
             <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
               <Card className="text-center shadow-vintage hover:shadow-letter transition-all duration-500 hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-none">
                 <CardHeader>
-                  <Clock className="h-14 w-14 text-primary mx-auto mb-6 transform transition-transform hover:rotate-180 duration-[2000ms]" />
+                  <Clock className="h-14 w-14 text-primary mx-auto mb-6 transform transition-transform hover:rotate-180 duration-[2s]" />
                   <CardTitle className="font-alata text-2xl mb-2">Local Delivery</CardTitle>
                   <p className="text-3xl font-semibold text-primary">10 minutes</p>
                 </CardHeader>
