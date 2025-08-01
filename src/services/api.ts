@@ -1,11 +1,11 @@
 import { getAuthHeaders } from '@/utils/auth';
 
 // Use environment variable for API base URL with fallback
-// This should be the full API endpoint (like https://letterlink-api.vercel.app/api)
-const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'https://letterlink-api.vercel.app/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app';
 
 // Debug log the API base URL
-console.log('API Base URL:', API_BASE);
+console.log('Environment variable VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+console.log('Final API Base URL:', API_BASE);
 
 // Helper function to handle API responses
 const handleResponse = async (response: Response) => {
@@ -21,7 +21,7 @@ const handleResponse = async (response: Response) => {
 export const authAPI = {
   login: async (credentials: { email: string; password: string }) => {
     console.log('Attempting login...');
-    const response = await fetch(`${API_BASE}/auth/login`, {
+    const response = await fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
@@ -41,7 +41,7 @@ export const authAPI = {
   },
 
   register: async (userData: { username: string; email: string; password: string }) => {
-    const response = await fetch(`${API_BASE}/auth/register`, {
+    const response = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
@@ -61,7 +61,7 @@ export const authAPI = {
   },
 
   getCurrentUser: async () => {
-    const response = await fetch(`${API_BASE}/auth/me`, {
+    const response = await fetch(`${API_BASE}/api/auth/me`, {
       headers: getAuthHeaders()
     });
     
@@ -85,7 +85,7 @@ export const authAPI = {
 // Profile API calls
 export const profileAPI = {
   getProfile: async () => {
-    const response = await fetch(`${API_BASE}/profile`, {
+    const response = await fetch(`${API_BASE}/api/profile`, {
       headers: getAuthHeaders()
     });
     
@@ -132,7 +132,7 @@ export const profileAPI = {
 // Friends API calls
 export const friendsAPI = {
   getFriends: async () => {
-    const response = await fetch(`${API_BASE}/friends`, {
+    const response = await fetch(`${API_BASE}/api/friends`, {
       headers: getAuthHeaders()
     });
     
@@ -145,7 +145,7 @@ export const friendsAPI = {
 
   searchUsers: async (query: string) => {
     console.log('API: Searching for:', query);
-    const url = `${API_BASE}/friends/search?q=${encodeURIComponent(query)}`;
+    const url = `${API_BASE}/api/friends/search?q=${encodeURIComponent(query)}`;
     console.log('API: Request URL:', url);
     
     const response = await fetch(url, {
@@ -166,7 +166,7 @@ export const friendsAPI = {
   },
 
   getFriendDetails: async (friendId: string) => {
-    const response = await fetch(`${API_BASE}/friends/${friendId}`, {
+    const response = await fetch(`${API_BASE}/api/friends/${friendId}`, {
       headers: getAuthHeaders()
     });
     
@@ -178,7 +178,7 @@ export const friendsAPI = {
   },
 
   getFriendTimeWeather: async (friendId: string) => {
-    const response = await fetch(`${API_BASE}/friends/${friendId}/time-weather`, {
+    const response = await fetch(`${API_BASE}/api/friends/${friendId}/time-weather`, {
       headers: getAuthHeaders()
     });
     
@@ -190,7 +190,7 @@ export const friendsAPI = {
   },
 
   addFriend: async (friendId: string) => {
-    const response = await fetch(`${API_BASE}/friends`, {
+    const response = await fetch(`${API_BASE}/api/friends`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ friendId })
@@ -209,7 +209,7 @@ export const friendsAPI = {
     subject: string;
     content: string;
   }) => {
-    const response = await fetch(`${API_BASE}/friends/request`, {
+    const response = await fetch(`${API_BASE}/api/friends/request`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(requestData)
@@ -225,7 +225,7 @@ export const friendsAPI = {
 
   // Get pending friend requests
   getFriendRequests: async () => {
-    const response = await fetch(`${API_BASE}/friends/requests`, {
+    const response = await fetch(`${API_BASE}/api/friends/requests`, {
       headers: getAuthHeaders()
     });
     
@@ -238,7 +238,7 @@ export const friendsAPI = {
 
   // Accept friend request
   acceptFriendRequest: async (requestId: string) => {
-    const response = await fetch(`${API_BASE}/friends/requests/${requestId}/accept`, {
+    const response = await fetch(`${API_BASE}/api/friends/requests/${requestId}/accept`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -252,7 +252,7 @@ export const friendsAPI = {
 
   // Reject friend request
   rejectFriendRequest: async (requestId: string) => {
-    const response = await fetch(`${API_BASE}/friends/requests/${requestId}/reject`, {
+    const response = await fetch(`${API_BASE}/api/friends/requests/${requestId}/reject`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -268,7 +268,7 @@ export const friendsAPI = {
 // Letters API calls
 export const lettersAPI = {
   getInbox: async () => {
-    const response = await fetch(`${API_BASE}/letters/inbox`, {
+    const response = await fetch(`${API_BASE}/api/letters/inbox`, {
       headers: getAuthHeaders()
     });
     
@@ -280,7 +280,7 @@ export const lettersAPI = {
   },
 
   getSentLetters: async () => {
-    const response = await fetch(`${API_BASE}/letters/sent`, {
+    const response = await fetch(`${API_BASE}/api/letters/sent`, {
       headers: getAuthHeaders()
     });
     
@@ -292,7 +292,7 @@ export const lettersAPI = {
   },
 
   getLetterById: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/letters/${letterId}`, {
+    const response = await fetch(`${API_BASE}/api/letters/${letterId}`, {
       headers: getAuthHeaders()
     });
     
@@ -309,7 +309,7 @@ export const lettersAPI = {
     content: string;
     deliveryDelay?: number;
   }) => {
-    const response = await fetch(`${API_BASE}/letters`, {
+    const response = await fetch(`${API_BASE}/api/letters`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(letterData)
@@ -328,10 +328,10 @@ export const lettersAPI = {
     content: string;
     deliveryDelay?: number;
   }) => {
-    console.log('API: Sending reply request to:', `${API_BASE}/letters/reply`);
+    console.log('API: Sending reply request to:', `${API_BASE}/api/letters/reply`);
     console.log('API: Request data:', replyData);
     
-    const response = await fetch(`${API_BASE}/letters/reply`, {
+    const response = await fetch(`${API_BASE}/api/letters/reply`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(replyData)
@@ -351,7 +351,7 @@ export const lettersAPI = {
   },
 
   getConversation: async (friendId: string) => {
-    const response = await fetch(`${API_BASE}/letters/conversation/${friendId}`, {
+    const response = await fetch(`${API_BASE}/api/letters/conversation/${friendId}`, {
       headers: getAuthHeaders()
     });
     
@@ -384,7 +384,7 @@ export const lettersAPI = {
     if (preferences.relationshipStatus) params.append('relationshipStatus', preferences.relationshipStatus);
     if (preferences.writingStyle) params.append('writingStyle', preferences.writingStyle);
     
-    const response = await fetch(`${API_BASE}/letters/matched-recipients?${params}`, {
+    const response = await fetch(`${API_BASE}/api/letters/matched-recipients?${params}`, {
       headers: getAuthHeaders()
     });
     
@@ -397,7 +397,7 @@ export const lettersAPI = {
 
   // Mark letter as read
   markLetterAsRead: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/letters/${letterId}/read`, {
+    const response = await fetch(`${API_BASE}/api/letters/${letterId}/read`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -424,11 +424,11 @@ export const lettersAPI = {
       writingStyle?: string;
     };
   }) => {
-    console.log('Sending random match letter to:', `${API_BASE}/letters/random-match`);
+    console.log('Sending random match letter to:', `${API_BASE}/api/letters/random-match`);
     console.log('Headers:', getAuthHeaders());
     console.log('Data:', letterData);
     
-    const response = await fetch(`${API_BASE}/letters/random-match`, {
+    const response = await fetch(`${API_BASE}/api/letters/random-match`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(letterData)
@@ -448,7 +448,7 @@ export const lettersAPI = {
 
   // Get pending friend letters (delivered letters waiting for accept/reject)
   getPendingFriendLetters: async () => {
-    const response = await fetch(`${API_BASE}/letters/pending-friend-letters`, {
+    const response = await fetch(`${API_BASE}/api/letters/pending-friend-letters`, {
       headers: getAuthHeaders()
     });
     
@@ -461,7 +461,7 @@ export const lettersAPI = {
 
   // Accept a friend letter
   acceptFriendLetter: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/letters/${letterId}/accept`, {
+    const response = await fetch(`${API_BASE}/api/letters/${letterId}/accept`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -475,7 +475,7 @@ export const lettersAPI = {
 
   // Reject a friend letter
   rejectFriendLetter: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/letters/${letterId}/reject`, {
+    const response = await fetch(`${API_BASE}/api/letters/${letterId}/reject`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -491,7 +491,7 @@ export const lettersAPI = {
 // Drafts API calls
 export const draftsAPI = {
   getDrafts: async () => {
-    const response = await fetch(`${API_BASE}/drafts`, {
+    const response = await fetch(`${API_BASE}/api/drafts`, {
       headers: getAuthHeaders()
     });
     
@@ -503,7 +503,7 @@ export const draftsAPI = {
   },
 
   getDraftById: async (draftId: string) => {
-    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+    const response = await fetch(`${API_BASE}/api/drafts/${draftId}`, {
       headers: getAuthHeaders()
     });
     
@@ -522,7 +522,7 @@ export const draftsAPI = {
     replyTo?: string;
     deliveryDelay?: number;
   }) => {
-    const response = await fetch(`${API_BASE}/drafts`, {
+    const response = await fetch(`${API_BASE}/api/drafts`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(draftData)
@@ -540,7 +540,7 @@ export const draftsAPI = {
     content?: string;
     deliveryDelay?: number;
   }) => {
-    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+    const response = await fetch(`${API_BASE}/api/drafts/${draftId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(draftData)
@@ -554,7 +554,7 @@ export const draftsAPI = {
   },
 
   deleteDraft: async (draftId: string) => {
-    const response = await fetch(`${API_BASE}/drafts/${draftId}`, {
+    const response = await fetch(`${API_BASE}/api/drafts/${draftId}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -567,7 +567,7 @@ export const draftsAPI = {
   },
 
   getDraftStats: async () => {
-    const response = await fetch(`${API_BASE}/drafts/stats`, {
+    const response = await fetch(`${API_BASE}/api/drafts/stats`, {
       headers: getAuthHeaders()
     });
     
@@ -579,7 +579,7 @@ export const draftsAPI = {
   },
 
   sendDraft: async (draftId: string) => {
-    const response = await fetch(`${API_BASE}/drafts/${draftId}/send`, {
+    const response = await fetch(`${API_BASE}/api/drafts/${draftId}/send`, {
       method: 'PATCH',
       headers: getAuthHeaders()
     });
@@ -595,7 +595,7 @@ export const draftsAPI = {
 // Letter cycle API calls
 export const letterCycleAPI = {
   getNextCycleInfo: async () => {
-    const response = await fetch(`${API_BASE}/letters/cycle/next`, {
+    const response = await fetch(`${API_BASE}/api/letters/cycle/next`, {
       headers: getAuthHeaders()
     });
     
@@ -607,7 +607,7 @@ export const letterCycleAPI = {
   },
 
   triggerCycle: async () => {
-    const response = await fetch(`${API_BASE}/letters/cycle/trigger`, {
+    const response = await fetch(`${API_BASE}/api/letters/cycle/trigger`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -620,7 +620,7 @@ export const letterCycleAPI = {
   },
 
   getArchivedLetters: async () => {
-    const response = await fetch(`${API_BASE}/letters/archived`, {
+    const response = await fetch(`${API_BASE}/api/letters/archived`, {
       headers: getAuthHeaders()
     });
     
@@ -669,7 +669,7 @@ export const api = {
   
   // Mark letter as read
   markLetterAsRead: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/letters/${letterId}/read`, {
+    const response = await fetch(`${API_BASE}/api/letters/${letterId}/read`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -687,7 +687,7 @@ export const api = {
     content: string;
     interests: string[];
   }) => {
-    const response = await fetch(`${API_BASE}/letters/random-match`, {
+    const response = await fetch(`${API_BASE}/api/letters/random-match`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(letterData)
@@ -717,7 +717,7 @@ export const api = {
   // Incoming letters methods (letters in transit)
   getInTransitLetters: async () => {
     console.log('🔍 Fetching incoming letters...');
-    const response = await fetch(`${API_BASE}/letters/incoming`, {
+    const response = await fetch(`${API_BASE}/api/letters/incoming`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
@@ -735,7 +735,7 @@ export const api = {
   },
   
   processReadyLetters: async () => {
-    const response = await fetch(`${API_BASE}/letters/deliver-scheduled`, {
+    const response = await fetch(`${API_BASE}/api/letters/deliver-scheduled`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -748,7 +748,7 @@ export const api = {
   },
   
   deliverLetter: async (letterId: string) => {
-    const response = await fetch(`${API_BASE}/in-transit/deliver/${letterId}`, {
+    const response = await fetch(`${API_BASE}/api/in-transit/deliver/${letterId}`, {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -761,7 +761,7 @@ export const api = {
   },
   
   getDeliveryStats: async () => {
-    const response = await fetch(`${API_BASE}/in-transit/stats`, {
+    const response = await fetch(`${API_BASE}/api/in-transit/stats`, {
       method: 'GET',
       headers: getAuthHeaders()
     });
