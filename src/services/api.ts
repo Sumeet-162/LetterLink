@@ -103,7 +103,7 @@ export const profileAPI = {
     bio?: string;
     interests: string[];
   }) => {
-    const response = await fetch(`${API_BASE}/profile`, {
+    const response = await fetch(`${API_BASE}/api/profile`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(profileData)
@@ -117,7 +117,7 @@ export const profileAPI = {
   },
 
   checkProfileStatus: async () => {
-    const response = await fetch(`${API_BASE}/profile/status`, {
+    const response = await fetch(`${API_BASE}/api/profile/status`, {
       headers: getAuthHeaders()
     });
     
@@ -351,7 +351,7 @@ export const lettersAPI = {
   },
 
   getConversation: async (friendId: string) => {
-    const response = await fetch(`${API_BASE}/api/letters/conversation/${friendId}`, {
+    const response = await fetch(`${API_BASE}/api/letters/api/letters/conversation/${friendId}`, {
       headers: getAuthHeaders()
     });
     
