@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, Pen, BookOpen, Clock, User } from "lucide-react"
 
@@ -9,10 +10,12 @@ interface NavItem {
   name: string;
   icon: React.ElementType;
   sectionId: string;
+  isRedirect?: boolean;
 }
 
 const NavigationBar = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
 
   const toggleMenu = () => setIsOpen(!isOpen)
 
@@ -20,14 +23,22 @@ const NavigationBar = () => {
     { name: "Write Now", icon: Pen, sectionId: "write" },
     { name: "How It Works", icon: BookOpen, sectionId: "how-it-works" },
     { name: "Delivery Times", icon: Clock, sectionId: "delivery-times" },
-    { name: "Sign In", icon: User, sectionId: "sign-in" }
+    { name: "Sign In", icon: User, sectionId: "sign-in", isRedirect: true }
   ]
+
+  const handleNavigation = (item: NavItem) => {
+    if (item.isRedirect && item.sectionId === "sign-in") {
+      navigate("/signin");
+    } else {
+      scrollToSection(item.sectionId);
+    }
+    setIsOpen(false);
+  }
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
     if (section) {
       section.scrollIntoView({ behavior: 'smooth' });
-      setIsOpen(false);
     }
   }
 
@@ -73,7 +84,7 @@ const NavigationBar = () => {
                 whileHover={{ scale: 1.05 }}
               >
                 <button
-                  onClick={() => scrollToSection(item.sectionId)}
+                  onClick={() => handleNavigation(item)}
                   className="flex items-center gap-2 text-sm text-gray-900 hover:text-primary transition-colors font-alata"
                 >
                   <item.icon className="w-4 h-4" />
@@ -91,12 +102,12 @@ const NavigationBar = () => {
             transition={{ duration: 0.3, delay: 0.2 }}
             whileHover={{ scale: 1.05 }}
           >
-            <a
-              href="#"
+            <button
+              onClick={() => scrollToSection('write')}
               className="inline-flex items-center justify-center px-5 py-2 text-sm text-white bg-primary rounded-full hover:bg-primary/90 transition-colors font-alata"
             >
               Get Started
-            </a>
+            </button>
           </motion.div>
 
           {/* Mobile Menu Button */}
@@ -137,7 +148,7 @@ const NavigationBar = () => {
                 >
                   <button 
                     className="flex items-center gap-3 text-base text-gray-900 font-alata" 
-                    onClick={() => scrollToSection(item.sectionId)}
+                    onClick={() => handleNavigation(item)}
                   >
                     <item.icon className="w-5 h-5 text-primary" />
                     {item.name}
@@ -152,13 +163,15 @@ const NavigationBar = () => {
                 exit={{ opacity: 0, y: 20 }}
                 className="pt-6"
               >
-                <a
-                  href="#"
+                <button
+                  onClick={() => {
+                    scrollToSection('write');
+                    toggleMenu();
+                  }}
                   className="inline-flex items-center justify-center w-full px-5 py-3 text-base text-white bg-primary rounded-full hover:bg-primary/90 transition-colors font-alata"
-                  onClick={toggleMenu}
                 >
                   Get Started
-                </a>
+                </button>
               </motion.div>
             </div>
           </motion.div>

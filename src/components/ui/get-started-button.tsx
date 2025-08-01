@@ -1,9 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export function GetStartedButton() {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate('/signup');
+  };
+
   return (
-    <Button className="group relative overflow-hidden font-alata" size="lg">
+    <Button 
+      className="group relative overflow-hidden font-alata" 
+      size="lg"
+      onClick={handleClick}
+    >
       <span className="mr-8 transition-opacity duration-500 group-hover:opacity-0">
         Start Writing
       </span>
