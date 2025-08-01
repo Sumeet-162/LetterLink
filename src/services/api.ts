@@ -1,6 +1,7 @@
 import { getAuthHeaders } from '@/utils/auth';
 
 // Use environment variable for API base URL with fallback
+// Cache bust: 2025-08-01T17:30:00Z
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app';
 
 // Debug log the API base URL
