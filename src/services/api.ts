@@ -1,15 +1,8 @@
 import { getAuthHeaders } from '@/utils/auth';
 
 // Use environment variable for API base URL with fallback
-// Cache bust: 2025-08-01T17:30:00Z
-// Remove trailing slash to prevent double slashes
 const API_BASE_RAW = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app';
 const API_BASE = API_BASE_RAW.endsWith('/') ? API_BASE_RAW.slice(0, -1) : API_BASE_RAW;
-
-// Debug log the API base URL
-console.log('Environment variable VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-console.log('Raw API Base:', API_BASE_RAW);
-console.log('Final API Base URL:', API_BASE);
 
 // Helper function to handle API responses
 const handleResponse = async (response: Response) => {

@@ -1,6 +1,12 @@
 // API configuration
+const API_BASE_RAW = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app';
+const API_BASE_NORMALIZED = API_BASE_RAW.endsWith('/') ? API_BASE_RAW.slice(0, -1) : API_BASE_RAW;
+
+// Debug logging
+console.log('API Base URL:', API_BASE_NORMALIZED);
+
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: API_BASE_NORMALIZED,
   endpoints: {
     auth: {
       login: '/api/auth/login',
@@ -17,7 +23,8 @@ export const API_CONFIG = {
 export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_CONFIG.baseURL}${endpoint}`;
   
-  console.log('Making API call to:', url); // Debug log
+  console.log('Login endpoint:', endpoint);
+  console.log('Making API call to:', url);
   
   const defaultOptions: RequestInit = {
     headers: {

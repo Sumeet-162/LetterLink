@@ -21,4 +21,14 @@ export default defineConfig(({ mode }) => ({
     // Ensure environment variables are available in production
     'process.env': {}
   },
+  build: {
+    // Cache bust for deployment
+    rollupOptions: {
+      output: {
+        entryFileNames: `[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `[name]-[hash]-${Date.now()}.js`,
+        assetFileNames: `[name]-[hash]-${Date.now()}.[ext]`
+      }
+    }
+  }
 }));
