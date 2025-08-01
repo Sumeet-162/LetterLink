@@ -1,11 +1,26 @@
 import { getAuthHeaders } from '@/utils/auth';
 
 // Use environment variable for API base URL with fallback
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://letterlink-api.vercel.app/api';
+// This should be the full API endpoint (like https://letterlink-api.vercel.app/api)
+const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API_BASE_URL}/api` : 'https://letterlink-api.vercel.app/api';
+
+// Debug log the API base URL
+console.log('API Base URL:', API_BASE);
+
+// Helper function to handle API responses
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Network response was not ok' }));
+    console.error('API Error:', error);
+    throw new Error(error.message || 'API request failed');
+  }
+  return response.json();
+};
 
 // Auth API calls
 export const authAPI = {
   login: async (credentials: { email: string; password: string }) => {
+    console.log('Attempting login...');
     const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

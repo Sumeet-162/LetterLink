@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Backend folder (since it's in a separate repo)
+/api/
+api/
+dist
+dist-ssr
+*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
